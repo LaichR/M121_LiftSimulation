@@ -1,0 +1,13 @@
+
+LiftTerminal/.vs/LiftTerminal/v16/.suo
+LiftTerminal/.vs/LiftTerminal/v16/Server/sqlite3/db.lock
+LiftTerminal/.vs/LiftTerminal/v16/Server/sqlite3/storage.ide
+LiftTerminal/.vs/LiftTerminal/v16/Server/sqlite3/storage.ide-shm
+LiftTerminal/.vs/LiftTerminal/v16/Server/sqlite3/storage.ide-wal
+*.pdb
+*.dll
+LiftTerminal/LiftTerminal/bin/Debug/LiftTerminal.exe
+LiftTerminal/LiftTerminal/bin/Debug/LiftTerminal.exe.config
+LiftTerminal/LiftTerminal/bin/Debug/Prism.Wpf.xml
+LiftTerminal/LiftTerminal/bin/Debug/Prism.xml
+LiftTerminal/LiftTerminal/bin/Debug/System.ValueTuple.xml

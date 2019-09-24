@@ -1,0 +1,70 @@
+﻿<Window x:Class="LiftTerminal.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LiftTerminal"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Name= "topBorder" Height="10"/>
+            <RowDefinition Name= "Tools" Height="1*"/>
+            <RowDefinition Name=  "ToolsSplitter" Height="5"/>
+            <RowDefinition Name=  "Terminal" Height="8*"/>
+            <RowDefinition Name=  "ButtonSplitter" Height="5"/>
+            <RowDefinition Name=  "Buttons" Height="3*"/>
+            <RowDefinition Name="buttomBorder" Height="10"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Name="leftBorder" Width="10"/>
+            <ColumnDefinition Name="area"/>
+            <ColumnDefinition Name="rightBorder" Width="10"/>
+        </Grid.ColumnDefinitions>
+        <ToolBarTray Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <ToolBar Name="PortSettings">
+                <TextBlock Text="Port"/>
+                <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedComPort}" MinWidth="75"/>
+                <ComboBox ItemsSource="{Binding AvailableBaudRates}" SelectedItem="{Binding SelectedBaudRate}"/>
+                <Button Command="{Binding CmdOpenClose}" Content="{Binding LabelOpenClose}"/>
+            </ToolBar>
+            <ToolBar Name="LineBrakSettings"  HorizontalAlignment="Stretch">
+                <TextBlock Text="Zeilentrennzeichen:"/>
+                <TextBox Text="{Binding LineBreaks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="300"/>
+            </ToolBar>
+            <ToolBar Name="TerminalTools">
+                <Button Content="Clear Terminal" 
+                        Command="{Binding CmdClearTerminal}"/>
+            </ToolBar>
+        </ToolBarTray>
+        <ContentControl Grid.Row="3" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <ListBox ItemsSource="{Binding Path=TraceCharacters}" />
+        </ContentControl>
+        <GridSplitter Grid.Row="2" Grid.Column="1"  VerticalAlignment="Center" Height="5"
+                      HorizontalAlignment="Stretch" Visibility="Visible" />
+        <GridSplitter Grid.Row="4" Grid.Column="1"  VerticalAlignment="Center" Height="5"
+                      HorizontalAlignment="Stretch" Visibility="Visible" />
+        <ContentControl Grid.Column="1" Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Name = "EtageButtons" />
+                    <RowDefinition Name = "CabineButtons"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Name="First"/>
+                    <ColumnDefinition Name="Second"/>
+                    <ColumnDefinition Name="Third"/>
+                    <ColumnDefinition Name="Fourth"/>
+                </Grid.ColumnDefinitions>
+                <Button Content="E-1"  Name="BtnF1"  Grid.Row="0" Grid.Column="0"/>
+                <Button Content="E-2" Name="BtnF2" Grid.Row="0" Grid.Column="1"/>
+                <Button Content="E-3" Name="BtnF3" Grid.Row="0" Grid.Column="2"/>
+                <Button Content="E-4" Name="BtnF4" Grid.Row="0" Grid.Column="3"/>
+                <Button Content="L-1" Name="BtnC1" Grid.Row="1" Grid.Column="0"/>
+                <Button Content="L-2" Name="BtnC2" Grid.Row="1" Grid.Column="1"/>
+                <Button Content="L-3" Name="BtnC3" Grid.Row="1" Grid.Column="2"/>
+                <Button Content="L-4" Name="BtnC4" Grid.Row="1" Grid.Column="3"/>
+            </Grid>
+        </ContentControl>
+    </Grid>
+</Window>
