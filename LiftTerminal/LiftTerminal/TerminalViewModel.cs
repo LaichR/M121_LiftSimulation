@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Management;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.ObjectModel;
@@ -28,8 +29,19 @@ namespace LiftTerminal
 
         SerialPortHandler _serialPortHandler;
 
+        ManagementEventWatcher _watcher = new ManagementEventWatcher();
+        WqlEventQuery _disconnectedQuery = new WqlEventQuery("__InstanceDeletionEvent",
+                new TimeSpan(0, 0, 1),
+                "TargetInstance ISA 'Win32_USBControllerDevice'");
+        WqlEventQuery _connectedQuery = new WqlEventQuery("__InstanceCreationEvent",
+                new TimeSpan(0, 0, 1),
+                "TargetInstance ISA 'Win32_USBControllerDevice'");
+
         public TerminalViewModel()
         {
+            _watcher.Query = _disconnectedQuery;
+            _watcher.EventArrived += UsbDisconnectEventArrived;
+
             _serialPortHandler = new SerialPortHandler(_rxBuffer);
             _serialPortHandler.DataReceived += RxDataReceived;
             _traceCharacters.AddRange(new[] { "erstens", "zweitens", "drittens" });
@@ -38,11 +50,13 @@ namespace LiftTerminal
                 if (_serialPortHandler.PortIsOpen)
                 {
                     _serialPortHandler.StopCom();
+                    _watcher.Stop();
                 }
                 else
                 {
                     _serialPortHandler.StartCom(_selectedComPort,
                         _selectedBaudRate);
+                    _watcher.Start();
                 }
                 RaisePropertyChanged("LabelOpenClose");
             }, ()=>!string.IsNullOrEmpty(_selectedComPort));
@@ -221,5 +235,37 @@ namespace LiftTerminal
             _serialPortHandler.Write(data, 0, data.Length);
         }
 
+        void DetectUsbDisconnect()
+        {
+
+            _watcher.Start();
+        }
+
+        private void UsbDisconnectEventArrived(object sender, EventArrivedEventArgs e)
+        {
+            RaisePropertyChanged("AvailablePorts");
+            if ( !SerialPortHandler.AvailablePorts.Contains(_selectedComPort)) // the selected port is not in the  list anymore
+            {
+                _serialPortHandler.StopCom();
+                _selectedComPort = "";
+                RaisePropertyChanged("LabelOpenClose");
+                _watcher.Stop();
+                _watcher.EventArrived -= UsbDisconnectEventArrived;
+                _watcher.Query = _connectedQuery;
+                _watcher.EventArrived += _watcher_EventArrived;
+                _watcher.Start();
+            }
+
+        }
+
+        private void _watcher_EventArrived(object sender, EventArrivedEventArgs e)
+        {
+            RaisePropertyChanged("LabelOpenClose");
+            RaisePropertyChanged("AvailablePorts");
+            _watcher.Stop();
+            _watcher.Query = _disconnectedQuery;
+            _watcher.EventArrived += UsbDisconnectEventArrived;
+            _watcher.EventArrived -= _watcher_EventArrived;
+        }
     }
 }

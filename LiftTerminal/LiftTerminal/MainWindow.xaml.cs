@@ -35,9 +35,10 @@ namespace LiftTerminal
             InitButtonHandler();
             AddHandler(FrameworkElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(Button_MouseLeftDown), true);
             AddHandler(FrameworkElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Button_MouseLeftUp), true);
-            
+           
         }
 
+        
 
         void InitButtonHandler()
         {

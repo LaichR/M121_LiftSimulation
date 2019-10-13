@@ -6,12 +6,16 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Threading;
+using System.Management;
 
 namespace LiftTerminal
 {
     class SerialPortHandler
     {
         Thread _runner;
+        AutoResetEvent _awaitPortOpen = new AutoResetEvent(false);
+
+
         SerialPort _com;
         bool _running = false;
         static int[] _availableBaudRates = new[] { 38400 };
@@ -21,7 +25,10 @@ namespace LiftTerminal
         public SerialPortHandler(ConcurrentQueue<byte> buffer)
         {
             _rxBuffer = buffer;
+            
         }
+
+
 
         public bool PortIsOpen
         {
@@ -55,7 +62,7 @@ namespace LiftTerminal
                         _running = true;
                     }
                     catch { }
-                    
+                    _awaitPortOpen.Set();
                     int nrOfReceivedData = 0;
                     try
                     {
@@ -81,14 +88,18 @@ namespace LiftTerminal
 
                     }
                 }
+                
                 _com.Dispose();
                 _com = null;
                 _runner = null;
+                _running = false;
             })
             {
                 IsBackground = true
             };
             _runner.Start();
+            _awaitPortOpen.WaitOne(1000);
+
         }
 
         public static string[] AvailablePorts
@@ -119,6 +130,7 @@ namespace LiftTerminal
                     _runner.Abort();
                 }
             }
+
         }
          
         void NotifyDataReceived(int nrOfReceivedBytes)
@@ -129,5 +141,6 @@ namespace LiftTerminal
             }
         }
 
+       
     }
 }
