@@ -35,10 +35,15 @@ namespace LiftTerminal
             InitButtonHandler();
             AddHandler(FrameworkElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(Button_MouseLeftDown), true);
             AddHandler(FrameworkElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Button_MouseLeftUp), true);
-           
+            Dispatcher.UnhandledException += Dispatcher_UnhandledException;
         }
 
-        
+        private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            System.Windows.MessageBox.Show(e.Exception.Message, "Exception occurred", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
+
+        }
 
         void InitButtonHandler()
         {

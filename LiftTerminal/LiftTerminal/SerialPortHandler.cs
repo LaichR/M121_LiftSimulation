@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Threading;
 using System.Management;
+using RuntimeCheck;
 
 namespace LiftTerminal
 {
@@ -14,8 +15,6 @@ namespace LiftTerminal
     {
         Thread _runner;
         AutoResetEvent _awaitPortOpen = new AutoResetEvent(false);
-
-
         SerialPort _com;
         bool _running = false;
         static int[] _availableBaudRates = new[] { 38400 };
@@ -40,6 +39,7 @@ namespace LiftTerminal
 
         public void Write(byte[] data, int offset, int count)
         {
+            
             if (PortIsOpen)
             {
                 _com.Write(data, offset, count);
@@ -62,6 +62,7 @@ namespace LiftTerminal
                         _running = true;
                     }
                     catch { }
+
                     _awaitPortOpen.Set();
                     int nrOfReceivedData = 0;
                     try
@@ -82,17 +83,19 @@ namespace LiftTerminal
                     {
                         _com.DiscardInBuffer();
                         _com.DiscardOutBuffer();
-                    } // it's ok to abort the thread
-                    catch(Exception e)
-                    {
-
+                        _running = false;
+                    }
+                    catch {
+                        _running = false;
                     }
                 }
                 
+                // in case there is an exception, it should be caught in the global handler!
                 _com.Dispose();
                 _com = null;
                 _runner = null;
                 _running = false;
+                
             })
             {
                 IsBackground = true

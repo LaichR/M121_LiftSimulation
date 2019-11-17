@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LiftTerminal"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="AVR Terminal" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Name= "topBorder" Height="10"/>
@@ -29,8 +29,9 @@
                 <Button Command="{Binding CmdOpenClose}" Content="{Binding LabelOpenClose}"/>
             </ToolBar>
             <ToolBar Name="LineBrakSettings"  HorizontalAlignment="Stretch">
+                <ComboBox ItemsSource="{Binding TraceOptions}" SelectedItem="{Binding TraceRepresentation}" MinWidth="75"/>
                 <TextBlock Text="Zeilentrennzeichen:"/>
-                <TextBox Text="{Binding LineBreaks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="300"/>
+                <TextBox Text="{Binding LineBreaks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="150"/>
             </ToolBar>
             <ToolBar Name="TerminalTools">
                 <Button Content="Clear Terminal" 
@@ -45,26 +46,64 @@
         <GridSplitter Grid.Row="4" Grid.Column="1"  VerticalAlignment="Center" Height="5"
                       HorizontalAlignment="Stretch" Visibility="Visible" />
         <ContentControl Grid.Column="1" Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <Grid >
-                <Grid.RowDefinitions>
-                    <RowDefinition Name = "EtageButtons" />
-                    <RowDefinition Name = "CabineButtons"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Name="First"/>
-                    <ColumnDefinition Name="Second"/>
-                    <ColumnDefinition Name="Third"/>
-                    <ColumnDefinition Name="Fourth"/>
-                </Grid.ColumnDefinitions>
-                <Button Content="E-1"  Name="BtnF1"  Grid.Row="0" Grid.Column="0"/>
-                <Button Content="E-2" Name="BtnF2" Grid.Row="0" Grid.Column="1"/>
-                <Button Content="E-3" Name="BtnF3" Grid.Row="0" Grid.Column="2"/>
-                <Button Content="E-4" Name="BtnF4" Grid.Row="0" Grid.Column="3"/>
-                <Button Content="L-1" Name="BtnC1" Grid.Row="1" Grid.Column="0"/>
-                <Button Content="L-2" Name="BtnC2" Grid.Row="1" Grid.Column="1"/>
-                <Button Content="L-3" Name="BtnC3" Grid.Row="1" Grid.Column="2"/>
-                <Button Content="L-4" Name="BtnC4" Grid.Row="1" Grid.Column="3"/>
-            </Grid>
+            <TabControl>
+                <TabItem Header="AVR-Input" HorizontalAlignment="Stretch">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row ="0" Grid.Column="0" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <TextBox Grid.Row ="0" Grid.Column="1" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                        <Button Grid.Row ="0" Grid.Column="2" Content="Write" Command="{Binding CmdWriteHexString}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
+                                   Text="{Binding Status}"/>
+                    </Grid>
+                </TabItem>
+                <!--<TabItem Header="TestLibrary">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Row="0" Grid.Column="0" Content="Select test library"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedTestLibrary}"/>
+                        <Button Grid.Row="0" Grid.Column="2" Content="Open File" Command="{Binding CmdTestLibOpen}" />
+                    </Grid>   
+                </TabItem>-->
+                <TabItem Header="Lift-Buttons">
+                    <Grid >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Name = "EtageButtons" />
+                            <RowDefinition Name = "CabineButtons"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Name="First"/>
+                            <ColumnDefinition Name="Second"/>
+                            <ColumnDefinition Name="Third"/>
+                            <ColumnDefinition Name="Fourth"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="E-1"  Name="BtnF1"  Grid.Row="0" Grid.Column="0"/>
+                        <Button Content="E-2" Name="BtnF2" Grid.Row="0" Grid.Column="1"/>
+                        <Button Content="E-3" Name="BtnF3" Grid.Row="0" Grid.Column="2"/>
+                        <Button Content="E-4" Name="BtnF4" Grid.Row="0" Grid.Column="3"/>
+                        <Button Content="L-1" Name="BtnC1" Grid.Row="1" Grid.Column="0"/>
+                        <Button Content="L-2" Name="BtnC2" Grid.Row="1" Grid.Column="1"/>
+                        <Button Content="L-3" Name="BtnC3" Grid.Row="1" Grid.Column="2"/>
+                        <Button Content="L-4" Name="BtnC4" Grid.Row="1" Grid.Column="3"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </ContentControl>
     </Grid>
 </Window>
