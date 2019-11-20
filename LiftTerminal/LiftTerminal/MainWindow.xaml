@@ -97,10 +97,10 @@
                         <Button Content="E-2" Name="BtnF2" Grid.Row="0" Grid.Column="1"/>
                         <Button Content="E-3" Name="BtnF3" Grid.Row="0" Grid.Column="2"/>
                         <Button Content="E-4" Name="BtnF4" Grid.Row="0" Grid.Column="3"/>
-                        <Button Content="L-1" Name="BtnC1" Grid.Row="1" Grid.Column="0"/>
-                        <Button Content="L-2" Name="BtnC2" Grid.Row="1" Grid.Column="1"/>
-                        <Button Content="L-3" Name="BtnC3" Grid.Row="1" Grid.Column="2"/>
-                        <Button Content="L-4" Name="BtnC4" Grid.Row="1" Grid.Column="3"/>
+                        <Button Content="L-1" Name="BtnC1" Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsEnabledL1}"/>
+                        <Button Content="L-2" Name="BtnC2" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsEnabledL2}"/>
+                        <Button Content="L-3" Name="BtnC3" Grid.Row="1" Grid.Column="2" IsEnabled="{Binding IsEnabledL3}"/>
+                        <Button Content="L-4" Name="BtnC4" Grid.Row="1" Grid.Column="3" IsEnabled="{Binding IsEnabledL4}"/>
                     </Grid>
                 </TabItem>
             </TabControl>

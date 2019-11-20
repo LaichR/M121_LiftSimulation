@@ -31,6 +31,7 @@ namespace LiftTerminal
         string _selectedComPort;
         string _avrInput = "";
         int _selectedBaudRate = SerialPortHandler.AvailableBaudRates[0];
+        int _liftStatus;
         ComputeTraceLineDelegate _computeTraceLines;
         string _selectedTraceRepresentation = ReprHex;
         DelegateCommand _cmdOpenClose;
@@ -41,6 +42,7 @@ namespace LiftTerminal
         ConcurrentQueue<byte> _rxBuffer = new ConcurrentQueue<byte>();
 
         SerialPortHandler _serialPortHandler;
+        LiftStatusReceiver _rxLiftStatus = new LiftStatusReceiver();
 
         ManagementEventWatcher _watcher = new ManagementEventWatcher();
         WqlEventQuery _disconnectedQuery = new WqlEventQuery("__InstanceDeletionEvent",
@@ -63,6 +65,8 @@ namespace LiftTerminal
             _computeTraceLines = ComputeLineBrakesHexContent;
             _serialPortHandler = new SerialPortHandler(_rxBuffer);
             _serialPortHandler.DataReceived += RxDataReceived;
+            _rxLiftStatus.StatusReceived += LiftStatusReceived;
+
             _cmdOpenClose = new DelegateCommand(() =>
             {
                 if (_serialPortHandler.PortIsOpen)
@@ -102,7 +106,25 @@ namespace LiftTerminal
             
         }
 
-        
+        public bool IsEnabledL1
+        {
+            get => (this._liftStatus & 1) == 1 ;
+        }
+
+        public bool IsEnabledL2
+        {
+            get => (this._liftStatus & 2) == 2;
+        }
+
+        public bool IsEnabledL3
+        {
+            get => (this._liftStatus & 4) == 4;
+        }
+
+        public bool IsEnabledL4
+        {
+            get => (this._liftStatus & 8) == 8;
+        }
 
         public string[] TraceOptions
         {
@@ -332,6 +354,14 @@ namespace LiftTerminal
             _serialPortHandler.Write(packet, 0, packet.Length);
         }
 
+        private void LiftStatusReceived(object sender, int status)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+
+            });
+        }
+
         private void RxDataReceived(object sender, int e)
         {
             List<byte> tmpBuilder = new List<byte>();
@@ -340,6 +370,7 @@ namespace LiftTerminal
                 if (_rxBuffer.TryDequeue(out byte data))
                 {
                     tmpBuilder.Add(data);
+
                 }
             }
             _receivedTraceCharacters.AddRange(tmpBuilder);

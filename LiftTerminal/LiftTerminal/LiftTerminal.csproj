@@ -75,6 +75,7 @@
     </ApplicationDefinition>
     <Compile Include="AvrPacketType.cs" />
     <Compile Include="ButtonType.cs" />
+    <Compile Include="LiftStatusReceiver.cs" />
     <Compile Include="SerialPortHandler.cs" />
     <Compile Include="TerminalViewModel.cs" />
     <Page Include="MainWindow.xaml">

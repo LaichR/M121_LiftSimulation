@@ -11,6 +11,7 @@ namespace LiftTerminal
         Undefined = 0,
         TraceMessage = 1,
         LiftSimulatorButton = 2,
-        TestCommand = 3
+        TestCommand = 3,
+        LiftStatus = 4
     }
 }
