@@ -62,6 +62,10 @@ static uint16_t WaitingTimer[8];
 /******************************************************************************/
 #define TX_ENABLE = (1<<TXEN)
 
+/**
+* @brief
+*/
+#define DOOR_OPEN_CLOSE_STEPS 4
 
 
 
@@ -124,7 +128,7 @@ static DisplayStateType  doorframe;           // LED: 1,10 der Lifttueren
 static TestHandlerCallback _testHandler;		  // test kommand interpreter
 
 
-DoorType          liftDoorState[maxDoors];   // Speichert den Zustand der einzelnen Tueren ab
+DoorType          liftDoorState[MAX_DOORS];   // Speichert den Zustand der einzelnen Tueren ab
 
 DoorPosType       doorPositions[5] = {Door00, Door25, Door50, Door75, Door100};
 
@@ -159,12 +163,26 @@ static uint8_t msgQ_out = 0;
 /*******************************************************************************
 ***  Funktions-Deklarationen ***************************************************
 *******************************************************************************/
-// Tueren in den angegebenen Zustand bringen; Private-Function
+
+/**
+* @brief Compute the next door position and adjust the states of all dooors; 
+*
+* This function is  called in ISthe context of the ISR
+*/
 void MakeDoorStates(void);
 
 
-// Ansteuerung der Ausgabeports
-void SetOutput();
+/** 
+* @brief Set the outputs of the board and read in the UART message
+*/
+void SetInputOutput();
+
+
+/** 
+* @brief process the received uart message
+*
+*/
+void ProcessMessage(uint8_t msgType, uint8_t* msg, uint8_t msgLen);
 
 /*******************************************************************************
 ********************************************************************************
@@ -173,33 +191,32 @@ void SetOutput();
 *******************************************************************************/
 
 
-/*******************************************************************************
-* Zustand der Lifttuere einer Etage in den vorgegebenen Zustand bringen
-*******************************************************************************/
+/**
+* @brief 
+*/
 void MakeDoorStates (void)
 {
-	for(uint8_t floor = 0; floor < 4; floor++ )
+	for(uint8_t door = 0; door < MAX_DOORS; door++ )
 	{
-		if( liftDoorState[floor].position == 0 )
+		if( liftDoorState[door].position == 0 )
 		{
-			if( liftDoorState[floor].state & DoorMooving)
+			if( liftDoorState[door].state & DoorMooving)
 			{
-				liftDoorState[floor].state &= ~DoorMooving;
-				SendEvent(SignalSourceDoor, LiftDoorEvent, liftDoorState[floor].state, floor);	
-				if( liftDoorState[floor].state & DoorOpen)
+				liftDoorState[door].state &= ~DoorMooving;
+				SendEvent(SignalSourceDoor, LiftDoorEvent, liftDoorState[door].state, door);	
+				if( liftDoorState[door].state & DoorOpen)
 				{
-					OpenDoors |= (1<<floor);
+					OpenDoors |= (1<<door);
 				}
 				else
 				{
-					OpenDoors &= ~(1<<floor);
+					OpenDoors &= ~(1<<door);
 				}
-			}
-			
+			}	
 		}
 		else
 		{
-			liftDoorState[floor].position --;
+			liftDoorState[door].position --;
 		}
 	}
 }
@@ -233,10 +250,11 @@ void SetState(Fsm* fsm, StateHandler handler)
 	LeaveAtomic();
 }
 
-/********************************************************************************
-* register a new finite state machine;
-* this function will never be called from ISR context; hence no need to protect
-********************************************************************************/
+/**
+* @brief register a new finite state machine;
+*
+* This function will never be called from ISR context; hence no need to protect
+*/
 void RegisterFsm(Fsm* fsm)
 {
 	//Usart_PutChar(0xDD);
@@ -382,7 +400,7 @@ void InitializeStart(){
   while(1)
   {
 	  DispatchEvent();	  
-	  SetOutput();
+	  SetInputOutput();
   }
   
 }
@@ -473,7 +491,7 @@ void ProcessMessage(uint8_t msgType, uint8_t* msg, uint8_t msgLen)
 /*******************************************************************************
 * Ansteuerung der Ausgabeports
 *******************************************************************************/
-void SetOutput(){
+void SetInputOutput(){
   
   static uint16_t outputRefreshCounter = 0;
   static uint8_t doorRefreshCounter = 0;
@@ -493,7 +511,7 @@ void SetOutput(){
 	  uint8_t position = liftDoorState[refreshingFloor].position;
 	  if( liftDoorState[refreshingFloor].state & DoorOpen )
 	  {
-		  position = 4-position;
+		  position = DOOR_OPEN_CLOSE_STEPS-position;
 	  }
 	  liftDoors = doorPositions[position] | (1<<refreshingFloor);
   } 
@@ -581,12 +599,10 @@ void SetDoorState (DoorStateType desiredState, FloorType floor)
 	EnterAtomic();
 	DoorStateType currentState = liftDoorState[floor].state;
 	DoorStateType maskeDesiredState = desiredState&0x30; 
-//	Usart_PutChar(maskeDesiredState);
-//	Usart_PutChar(currentState);
-//	Usart_PutChar(floor);
+
 	if( (maskeDesiredState&currentState) == 0 )
 	{	
-		liftDoorState [floor].position = 4;		
+		liftDoorState [floor].position = DOOR_OPEN_CLOSE_STEPS;		
     }
 	liftDoorState [floor].state = (maskeDesiredState|1);  
 	

@@ -20,7 +20,7 @@
 *       - Lift-Buttons/Etage-Buttons (PortD ist für UART gebraucht)
 * @date 10.10.2019 Einführung eines einfachen State-Event frameworks 
 *       - Lift und Türen bewegen läuft auf Timer-Interrupt
-*       - INT1 Trigger für Türstopp
+*       - INT1 Trigger für Türstopp/Emergency
 *       - Funktionen für Atomare Code Abschnitte
 *       - Kapselung von avr/IO.h
 * @date 22.10.2019 Formatierung der Kommentare und Dokumenation mit Doxygen
@@ -40,14 +40,22 @@
 /** 
 * @brief enumerate für die explizite Festlegung von false und true
 *
-* In neueren Versionen des C-Compilers sind true und false bereits definiert.
+* In neueren Versionen des C-Standards sind true und false bereits definiert.
 */
 typedef enum
 {
-	false = 0,
-	true = 1	
+	false = 0,  ///< 0 == false
+	true = 1	///< 1 == true	
 }Boolean;
 
+/** 
+* @brief Definition des Protokolles zwischen PC und uP
+*
+* Die Datenpackete, welche zwischen dem uP und dem PC ausgetauscht werden haben einen
+* header. Dieser Header besteht aus einem 'PacketType' und einer Länge.
+* Dies ist notwendig um die verschiedenen Inhalte auseinander zu halten.
+*
+*/
  typedef enum 
  {
 	 PacketType_Undefined = 0,
@@ -86,9 +94,20 @@ typedef enum
 }
 ButtonType;
 
-#define IS_RESERVATION_BUTTON_PRESSED(button, floor) (button& (1<<(floor+4)))
-#define IS_TARGET_BUTTON_PRESSED(button, floor) (button & (1<<floor))
-#define IS_EMERGENCY_BUTTON_PRESSED(button) (button&1)
+/** 
+* @brief Abfrage, ob Reservations-Taste für Etage *floor gedruckt ist
+*/
+#define IS_RESERVATION_BUTTON_PRESSED(button, floor) ((button)& (1<<(floor+4)))
+
+/**
+* @brief Abfrage, ob Zielwahl-Taste für Etage *floor gedruckt ist
+*/
+#define IS_TARGET_BUTTON_PRESSED(button, floor) ((button) & (1<<floor))
+
+/**
+* @brief Abfrage, ob Reservations-Taste für Etage *floor gedruckt ist
+*/
+#define IS_EMERGENCY_BUTTON_PRESSED(button) ((button)&EmergencyButton)
 
 
 /**
@@ -109,11 +128,11 @@ DoorPosType;
 */
 typedef enum 
 {
-  DoorMooving = 0x01,
-  DoorOpen = 0x10, 
-  DoorOpening = 0x11,
-  DoorClosed = 0x20,
-  DoorClosing = 0x21,
+  DoorMooving = 0x01, ///< Tür öffnet oder schliesst
+  DoorOpen = 0x10,    ///< Tür ist nicht geschlossen
+  DoorOpening = 0x11, ///< Tür bewegt sich und ist nicht gesclossen
+  DoorClosed = 0x20,  ///< Tür ist nicht offen
+  DoorClosing = 0x21, ///< Tür bewegt sich und ist nicht offen
 }
 DoorStateType;
 
@@ -228,15 +247,13 @@ typedef struct Message_tag
 /** 
 * @brief typedef um status information an den Terminal zu schicken
 *
-* Diese Information wird benötigt, um die Buttons auf dem Bildschirm zu enabled/disablen
+* @brief Diese Information wird benötigt, um die Buttons auf dem Bildschirm zu enabled/disablen
 */
 typedef struct LiftStatus_tag
 {	
-	uint8_t SystemStatus;
-	uint8_t OpenDoors;
+	uint8_t SystemStatus; ///< Status information of the elevator model
+	uint8_t OpenDoors;    ///< Bitflag to indicate which doors are open
 } LiftStatus;
-
-
 
 
 
@@ -270,7 +287,10 @@ typedef struct Fsm_tag
 	StateHandler CurrentState;		///< Funktion, welche den aktuellen Zustand representiert
 }Fsm;
 
-
+/** 
+* @brief EIne Funktion mit dieser Signatur kann registriert werden, um *Test-Meldungen zu verarbeiten
+*
+*/
 typedef void (*TestHandlerCallback)(uint8_t* payload, uint8_t len );
 
 /******************************************************************************/
@@ -283,13 +303,20 @@ typedef void (*TestHandlerCallback)(uint8_t* payload, uint8_t len );
 
 
 
-/** Anzahl der vorhanden Tueren */
-#define maxDoors	4
+/** 
+* @brief Anzahl der vorhanden Tueren 
+*/
+#define MAX_DOORS	4
 
-/** hoechster Positionswert des Liftes */
-#define liftMaxPos	49   
+/** 
+* @brief hoechster Positionswert des Liftes 
+*/
+#define LIFT_MAX_POS	49   
 
-#define POS_STEP_PER_FLOOR 16
+/** 
+* @brief Anzahl der Position-Schritte pro Etage
+*/
+#define POS_STEPS_PER_FLOOR 16
 
 /** 
 * @brief Dieses Flag enabled/disabled eine Periodischen Status-Meldung and den Terminal
@@ -384,10 +411,14 @@ ButtonStateType ReadKeyEvent (ButtonType button);
 // Lesen des Zustandes der Lifttuere einer Etage; Public-Function
 DoorStateType ReadDoorState (FloorType floor);
 
-// Setzen des Tuerenzustandes pro Etage; Public-Function
+/** 
+* @brief Setzen des Tuerenzustandes pro Etage; Public-Function
+*/
 void SetDoorState (DoorStateType state, FloorType floor);
 
-/// Setzen der Geschwindigkeit der Fahrgastzelle
+/** 
+* @brief Setzen der Geschwindigkeit der Fahrgastzelle
+*/
 void SetElevatorSpeed(SpeedType speed);
 
 /** 
@@ -428,36 +459,36 @@ void SetIndicatorFloorState (FloorType floor);
 void SetIndicatorElevatorState (FloorType floor);
 
 /** 
-* @brief Loeschen der Ruftastenanzeige pro Etage; Public-Function
+* @brief Loeschen der Ruftastenanzeige pro Etage
 *
 * @param bestellte Etage
 */
 void ClrIndicatorFloorState (FloorType floor);
 
 /** 
-* @brief Loeschen der Etagenauswahlanzeige im Lift; Public-Function
+* @brief Loeschen der Etagenauswahlanzeige im Lift
 *
 * @param gewähltes Etage
 */
 void ClrIndicatorElevatorState (FloorType floor);
 
-/** 
-* @brief Bearbeiten von Meldungen, welche über UART empfangen wurden; Public-Function
-*
-* 
-*/
-void ProcessMessage(uint8_t msgType, uint8_t* msg, uint8_t msgLen);
-
 
 /** 
-* @brief Starten eines Timers, welcher nach einer bestimmten Zeit ein event auslöst. 
+* @brief Starten eines Timers, welcher nach einer bestimmten Zeit ein Event auslöst. 
 *
 * @param ms nrOfMilliseconds bis der Timer ausgelöst wird.
-* @return the timer id or 0xFF if the timer could not be set;
+* @return die Id des Timer 0xFF wenn der Timer nicht aktiviert werden konnte;
+*
+* Das Framework erlaubt es bis zu acht timer gleichzeitig aktiviert zu haben. Ein Timer ist wird immer nur einmal aufgerufen. Periodische Timer müssen vom 
+* Klienten wieder gestartet werden.
+*
 */
 uint8_t StartTimer(uint16_t ms);
 
 /** 
-* 
+* @brief Verferfen eines laufenden Timers
+*
+* Wenn ein gestarteter Timer nicht mehr benötigt wird, kann er über diese Funktion 
+* wieder abgestellt werden.
 */
 void StopTimer( uint8_t timerId);

@@ -126,6 +126,7 @@
         <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
       </AvrGcc>
     </ToolchainSettings>
+    <PostBuildEvent>%GIT_ROOT%\M121_LiftSimulation\LiftLibrary\MakeDoku.bat</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LiftLibrary.c">

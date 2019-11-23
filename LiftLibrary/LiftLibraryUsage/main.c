@@ -245,10 +245,8 @@ void MotorState_DoorClosing(Message* msg)
 		}
 		else
 		{
-			Usart_PutChar(0x58);
 			SetState(&_motorControl.fsm, MotorState_Moving);
-			Usart_PutChar(_motorControl.target * POS_STEP_PER_FLOOR);
-			MoveElevator(_motorControl.target * POS_STEP_PER_FLOOR, OnElevatorPositionChanged );
+			MoveElevator(_motorControl.target * POS_STEPS_PER_FLOOR, OnElevatorPositionChanged );
 		}
 	}
 }
