@@ -36,6 +36,7 @@
 /*** EIGENE DATENTYPEN ********************************************************/
 /******************************************************************************/
 
+
 /** 
 * @brief enumerate für die explizite Festlegung von false und true
 *
@@ -73,17 +74,22 @@ FloorType;
 */
 typedef enum 
 { 
-  EmergencyButton = 0,
-	LiftButton_F0 = 1, 
-	LiftButton_F1 = 2, 
-	LiftButton_F2 = 4,
-	LiftButton_F3 = 8,
-	FloorButton_F0 = 16, 
-	FloorButton_F1 = 32,
-  FloorButton_F2 = 64, 
-  FloorButton_F3 = 128
+	LiftButton_F0 = 0x01, 
+	LiftButton_F1 = 0x02, 
+	LiftButton_F2 = 0x04,
+	LiftButton_F3 = 0x08,
+	FloorButton_F0 = 0x10, 
+	FloorButton_F1 = 0x20,
+	FloorButton_F2 = 0x40, 
+	FloorButton_F3 = 0x80,
+    EmergencyButton = 0x100,
 }
 ButtonType;
+
+#define IS_RESERVATION_BUTTON_PRESSED(button, floor) (button& (1<<(floor+4)))
+#define IS_TARGET_BUTTON_PRESSED(button, floor) (button & (1<<floor))
+#define IS_EMERGENCY_BUTTON_PRESSED(button) (button&1)
+
 
 /**
 * @brief Bitmaske für den Zustand der Tür      
@@ -103,10 +109,11 @@ DoorPosType;
 */
 typedef enum 
 {
-  Open = 0x10, 
-  Opening = 0x11,
-  Closed = 0x20,
-  Closing = 0x21,
+  DoorMooving = 0x01,
+  DoorOpen = 0x10, 
+  DoorOpening = 0x11,
+  DoorClosed = 0x20,
+  DoorClosing = 0x21,
 }
 DoorStateType;
 
@@ -167,6 +174,7 @@ typedef enum
 SpeedType;
 
 
+
 /** 
 * @brief Beschreibt die möglichen Ereignisquellen des Systems
 *
@@ -179,7 +187,8 @@ typedef enum
 	SignalSourceElevator =		0x02, 
 	SignalSourceEtageButton =	0x04, 
 	SignalSourceLiftButton =	0x08,
-	SignalSourceDoor =			0x10,  
+	SignalSourceDoor =			0x10,
+	SignalSourceApp =           0x20,  
 }
 SignalSourceType;
 
@@ -192,14 +201,13 @@ SignalSourceType;
 typedef enum
 {
 	SystemMessage = 0xC0,
-	LiftStarted,
-	LiftCalibrated,
-	EnterTestMode,
-	ExitTestMode,
-	LiftDoorClosed,
-	LiftDoorOpen,
-	ElevatorAtFloor,
-	DoorEmergencyBreak,
+	LiftStarted = 0xC1,				//< ausgelöst durch InitializeStart; msgLow = 0, msgHigh = 0; wird von der Library generiert
+	LiftCalibrated = 0xC2,			//< ausgelöst durch CalibrationDone; msgLow = 0; msgHig = 0; muss selber generiert werden
+	LiftDoorEvent  = 0xC5,			//< von der Library asgelöst, wenn ein Türe den angeforderten Zustand erreicht hat (geöffnet oder geschlossen); msgLow = Zustand Open/Closed; msgHigh = floor
+	ElevatorAtFloor  = 0xC6,		//< ausgelöst, wenn der Lift die verlangte Etage erreicht hat; muss selber generiret werden
+	ButtonEvent  = 0xC7,			//< vom System ausgelöst, wenn der Benutzer einen Knopf drückt; msgLow = Bitmaske des Knopfes; msgHigh = Pressed oder Released 
+	TimerEvent = 0xC8,				//< vom System ausgelöst, wenn ein Software-Timer abläuft; msgLow = 0; msgHigh = 0
+	DoorEmergencyBreak = 0xC9,		//< vom System ausgelöst, wenn der Notfall-Knopf gedrückt wird.......
 	
 }WellKnownMessageIds;
 
@@ -227,6 +235,8 @@ typedef struct LiftStatus_tag
 	uint8_t SystemStatus;
 	uint8_t OpenDoors;
 } LiftStatus;
+
+
 
 
 
@@ -278,6 +288,13 @@ typedef void (*TestHandlerCallback)(uint8_t* payload, uint8_t len );
 
 /** hoechster Positionswert des Liftes */
 #define liftMaxPos	49   
+
+#define POS_STEP_PER_FLOOR 16
+
+/** 
+* @brief Dieses Flag enabled/disabled eine Periodischen Status-Meldung and den Terminal
+*/
+extern Boolean EnableStatusUpdate;
 
 
 /******************************************************************************/
@@ -332,7 +349,10 @@ void RegisterTestHandler( TestHandlerCallback testHandler );
 void InitializePorts(void);
 
 /**
-* @brief Setzen des Anfangszustandes (I/O); Public-Function
+* @brief Initialisierung der LiftLibrary
+*
+* Das Board wird initialisiert (I/O) und das Framework wird gestartet (der MainLoop und der Message-Dispatcher)
+* In dieser Funktion wird die Meldung LiftStarted erzeugt. Die SignalSource ist 'SignalSourceEnvironment'
 */
 void InitializeStart(void);
 
@@ -409,11 +429,15 @@ void SetIndicatorElevatorState (FloorType floor);
 
 /** 
 * @brief Loeschen der Ruftastenanzeige pro Etage; Public-Function
+*
+* @param bestellte Etage
 */
 void ClrIndicatorFloorState (FloorType floor);
 
 /** 
 * @brief Loeschen der Etagenauswahlanzeige im Lift; Public-Function
+*
+* @param gewähltes Etage
 */
 void ClrIndicatorElevatorState (FloorType floor);
 
@@ -423,3 +447,17 @@ void ClrIndicatorElevatorState (FloorType floor);
 * 
 */
 void ProcessMessage(uint8_t msgType, uint8_t* msg, uint8_t msgLen);
+
+
+/** 
+* @brief Starten eines Timers, welcher nach einer bestimmten Zeit ein event auslöst. 
+*
+* @param ms nrOfMilliseconds bis der Timer ausgelöst wird.
+* @return the timer id or 0xFF if the timer could not be set;
+*/
+uint8_t StartTimer(uint16_t ms);
+
+/** 
+* 
+*/
+void StopTimer( uint8_t timerId);

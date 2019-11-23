@@ -43,6 +43,7 @@ namespace LiftTerminal
             if (PortIsOpen)
             {
                 _com.Write(data, offset, count);
+                _com.BaseStream.Flush();
             }
         }
 

@@ -13,7 +13,7 @@
 *                        -> Hardware Simulationen laufen auf Timer-Interrupt
 *                        -> Verwendung der UART für Debugging und Test
 *                        -> Verwendung der UART für User-Interaktionen; Lift-Buttons/Etage-Buttons (PortD ist für UART gebraucht)
-*                        -> INT1 Trigger für Türstopp
+*                        -> INT1 Trigger für Türstopp / Emergency Button
 *                        -> Funktionen für Atomare Code Abschnitte
 *                        -> einfaches Framework für Zustandsmaschinen und Events
 *                        -> Kapselung von avr/IO.h
@@ -36,7 +36,7 @@
 *
 * Erstellte Funktionen:
 * - initializePort()
-* Copyright (c) 2016 by W.Odermatt, CH-6340 Baar
+* Copyright (c) 2016 by W.Odermatt, R. Laich
 *******************************************************************************/
 
 
@@ -53,6 +53,9 @@
 char USART_rxBuffer[USART_RX_BUFFER_SIZE];
 static volatile uint8_t USART_rxBufferIn = 0;
 static volatile uint8_t USART_rxBufferOut = 0; 
+
+static uint8_t UsedTimers;
+static uint16_t WaitingTimer[8];
 
 /******************************************************************************/
 /*** Lokale Macros ********************************************************/
@@ -93,8 +96,8 @@ static volatile uint8_t USART_rxBufferOut = 0;
 /*** EIGENE DATENTYPEN ********************************************************/
 /******************************************************************************/
 typedef struct {
-  DoorStateType	 state;
-  int8_t		 position;
+  DoorStateType	state;
+  int8_t		position;
 } DoorType;
 
 
@@ -126,10 +129,10 @@ DoorType          liftDoorState[maxDoors];   // Speichert den Zustand der einzel
 DoorPosType       doorPositions[5] = {Door00, Door25, Door50, Door75, Door100};
 
 
-volatile uint8_t ButtonState  = 0;  // das kann im Interrupt-Kontext geschrieben werden
+volatile uint16_t ButtonState  = 0;  // das kann im Interrupt-Kontext geschrieben werden
 volatile uint8_t SystemState  = 0;  // das kann im Interrupt-Kontext geschrieben werden
 static uint8_t OpenDoors = 0;
-
+Boolean EnableStatusUpdate = false;
 
 
 typedef struct ElevatorType_tag
@@ -173,28 +176,30 @@ void SetOutput();
 /*******************************************************************************
 * Zustand der Lifttuere einer Etage in den vorgegebenen Zustand bringen
 *******************************************************************************/
-void MakeDoorStates (void){
-
+void MakeDoorStates (void)
+{
 	for(uint8_t floor = 0; floor < 4; floor++ )
 	{
-		if ((liftDoorState[floor].state == Closing))
+		if( liftDoorState[floor].position == 0 )
 		{
-			liftDoorState[floor].position--;
-			if( liftDoorState[floor].position == 0)
+			if( liftDoorState[floor].state & DoorMooving)
 			{
-				SendEvent(SignalSourceDoor, LiftDoorClosed, floor, 0 );
-				liftDoorState[floor].state = Closed;
+				liftDoorState[floor].state &= ~DoorMooving;
+				SendEvent(SignalSourceDoor, LiftDoorEvent, liftDoorState[floor].state, floor);	
+				if( liftDoorState[floor].state & DoorOpen)
+				{
+					OpenDoors |= (1<<floor);
+				}
+				else
+				{
+					OpenDoors &= ~(1<<floor);
+				}
 			}
+			
 		}
-		if ((liftDoorState[floor].state == Opening))
+		else
 		{
-			liftDoorState[floor].position++;
-			if( liftDoorState[floor].position == 4)
-			{
-				SendEvent(SignalSourceDoor, LiftDoorOpen, floor, 0 );
-				liftDoorState[floor].state = Open;
-				OpenDoors |= (1<<floor);
-			}
+			liftDoorState[floor].position --;
 		}
 	}
 }
@@ -312,28 +317,38 @@ void InitializePorts(){
   liftPos_D     = 0xFF;
   liftDoors_D   = 0xFF;
   liftDisplay_D = 0xFF;
-  buttons_D     = 0x00; //set all ot input; the initialisation of USAR will overwrite what is neccessary
+  buttons_D     = 0x00; //set all to input; the initialisation of USART will overwrite what is neccessary
   Usart_Init();
-  MCUCR |= 3;
-  GICR |= (1<<6); // enable INT0
+  MCUCR |= 3;		// PortD2 is mapped to INT0; this will trigger on rising endge
+  GICR |= (1<<6);	// enable INT0
 }
 
 void InitializeCounter()
 {
-	OCR1A = 0x180;	// compare register
-	TCNT1 = 0;		// initialize the counter to 0
+	
+	TCNT0 = 0;
+	TCCR0 = 0x0B;		//prescaler = 5 (1024), wgm12=1 (0x8 =Clear timer on counter match)
+	OCR0 = 8000/64;
+	TIMSK |=0x2;		// enable compare match irq
+		
+	OCR1A = 0x180;		// compare register
+	TCNT1 = 0;			// initialize the counter to 0
 	TCCR1A = 0x00;  
-	TCCR1B = 0x0D;	//prescaler = 5, wgm12=1 (0x8)
-	TIMSK = 0x10;	//enable interrupt
+	TCCR1B = 0x0D;		//prescaler = 5, wgm12=1 (0x8)
+	TIMSK |= 0x10;		//enable interrupt
 }
 
 
 
 
-/*******************************************************************************
-* Initialisierung des Anfangszustandes
-*******************************************************************************/
+/**
+* @brief Initialisierung des Anfangszustandes
+*
+* Die Funktion InitializeStart() started das Framework.
+*/
 void InitializeStart(){
+  
+  Usart_PutChar(0xCA);
   
   // Aktivierung der Liftpositionsanzeige
   liftPosDisplay_On = On;
@@ -353,7 +368,7 @@ void InitializeStart(){
   // Alle Lifttueren schliessen
   for (int8_t count = Floor0; count <= Floor3; count++){
     liftDoorState[count].position = 0;
-    liftDoorState[count].state = Closed;
+    liftDoorState[count].state = DoorClosed;
   }
 
   // Setzt den Lift auf einen bestimmten Positionswert
@@ -362,12 +377,12 @@ void InitializeStart(){
   
   InitializeCounter();
   SendEvent( SignalSourceEnvironment, LiftStarted, 0, 0 );
-  Usart_PutChar(0xAA);
+  Usart_PutChar(0xFE);
+  
   while(1)
   {
 	  DispatchEvent();	  
 	  SetOutput();
-	  
   }
   
 }
@@ -383,6 +398,8 @@ void CalibrateElevatorPosition(PositionChangeSignal notify)
 
 void HandleMessage(char receivedData)
 {
+	//Usart_PutChar(0xaa);
+	//Usart_PutChar(receivedData);
 	static uint8_t msgBuffer[14]; // longest
 	static uint8_t bufferIndex = 0;
 	static uint8_t msgType = 0;
@@ -394,7 +411,8 @@ void HandleMessage(char receivedData)
 	}
 	else if(msgLen == 0)
 	{
-		msgLen = receivedData;
+		msgLen = receivedData-2;
+		
 		bufferIndex = 0;
 	}
 	else if(bufferIndex < msgLen)
@@ -404,6 +422,7 @@ void HandleMessage(char receivedData)
 		{
 			ProcessMessage(msgType,  msgBuffer, msgLen );
 			msgType = 0;
+			bufferIndex = 0;
 		}
 	}
 }
@@ -412,32 +431,35 @@ void ProcessMessage(uint8_t msgType, uint8_t* msg, uint8_t msgLen)
 {
 	if( msgType == PacketType_LiftSimulatorButton)
 	{
+		//Usart_PutChar(0xab);
 		uint8_t receivedData = msg[0];
 		if( ((receivedData&0x40) != 0) || ((receivedData&0x20) != 0))
 		{
-			Usart_PutChar(0x12);
+			//Usart_PutChar(0x12);
+			
 			uint8_t buttonState = (receivedData & 0x10)==0x10; // pressed or released
 			uint8_t shiftOffset = 0;
-			Usart_PutChar(buttonState);
+			
+			//Usart_PutChar(buttonState);
 			
 			if( receivedData & 0x20 )
 			{
 				shiftOffset = 4;
 			}
-			Usart_PutChar(0x13);
+			//Usart_PutChar(0x13);
 			uint8_t shift = (receivedData&0xF) + shiftOffset;
-			Usart_PutChar(shift);
+			//Usart_PutChar(shift);
 			ButtonState &= ~(1<<shift); // clear the bit if set
 			if(buttonState)
 			{
 				ButtonState |= (1<<shift);
-			}	
-			
-			
+			}
+				
+			SendEvent(SignalSourceEnvironment, ButtonEvent, (1<<shift), buttonState);
 		}
 	
-		Usart_PutChar(0x14);	
-		Usart_PutChar(ButtonState);
+		//Usart_PutChar(0x14);	
+		//Usart_PutChar(ButtonState);
 	}
 	else if( msgType == PacketType_TestCommand)
 	{
@@ -468,7 +490,12 @@ void SetOutput(){
   {
 	  doorRefreshCounter++;
 	  uint8_t refreshingFloor= doorRefreshCounter%4;
-	  liftDoors = doorPositions[liftDoorState[refreshingFloor].position] | (1<<refreshingFloor);
+	  uint8_t position = liftDoorState[refreshingFloor].position;
+	  if( liftDoorState[refreshingFloor].state & DoorOpen )
+	  {
+		  position = 4-position;
+	  }
+	  liftDoors = doorPositions[position] | (1<<refreshingFloor);
   } 
   
   buttonRefreshCounter++;
@@ -483,7 +510,7 @@ void SetOutput(){
 		}
 		if( displayCache & (1<<floor))
 		{
-			buttonFloorLed = Floor0;	
+			buttonFloorLed = floor;	
 		}
 	}
 
@@ -511,8 +538,9 @@ void SetOutput(){
 	  HandleMessage(receivedData);
   }
   
-  if( terminalRefreshCounter == 0xFFFF)
+  if( terminalRefreshCounter++ == 0xFFF && EnableStatusUpdate )
   {
+	  
 	  Usart_PutChar(PacketType_LiftStatus); // message type
 	  Usart_PutChar(6);					    // message length
 	  Usart_PutChar(0xA5);					// synch
@@ -530,6 +558,7 @@ void SetOutput(){
 *******************************************************************************/
 ButtonStateType ReadKeyEvent (ButtonType button)
 {  
+	
 	ButtonStateType buttonState= ((buttons & button)? Pressed: Released);
 	return buttonState;
 }
@@ -547,19 +576,21 @@ DoorStateType ReadDoorState (FloorType floor)
 /*******************************************************************************
 * Setzen des Lifttuerenzustandes einer Etage
 *******************************************************************************/
-void SetDoorState (DoorStateType desiredState, FloorType floor){
-
+void SetDoorState (DoorStateType desiredState, FloorType floor)
+{
+	EnterAtomic();
 	DoorStateType currentState = liftDoorState[floor].state;
-	if( (desiredState&0xF0) !=(currentState&0xF0) )
-	{
-		EnterAtomic();
-		liftDoorState [floor].state = (desiredState|1);  
-		if( desiredState & Closed)
-		{
-			OpenDoors &= ~(1<< floor);
-		}
-		LeaveAtomic();
+	DoorStateType maskeDesiredState = desiredState&0x30; 
+//	Usart_PutChar(maskeDesiredState);
+//	Usart_PutChar(currentState);
+//	Usart_PutChar(floor);
+	if( (maskeDesiredState&currentState) == 0 )
+	{	
+		liftDoorState [floor].position = 4;		
     }
+	liftDoorState [floor].state = (maskeDesiredState|1);  
+	
+	LeaveAtomic();
 }
 
 
@@ -622,7 +653,7 @@ void SetIndicatorFloorState (FloorType floor)
 void SetIndicatorElevatorState (FloorType floor){
   
   if (floor <= 3){
-    displayCache |= 1<<(floor + 4); //Setzen der Bits: 4-7
+    displayCache |= (1<<(floor + 4)); //Setzen der Bits: 4-7
   }
 }
 
@@ -691,16 +722,14 @@ void Usart_PutChar( char ch)
 
 ISR(INT0_vect)
 {
-	Usart_PutChar(0xDD);
-	Usart_PutChar(0xEE);
-	SendEvent(SignalSourceDoor, DoorEmergencyBreak, 0, 0);
+	ButtonState |= 0x100;
+	SendEvent(SignalSourceDoor, DoorEmergencyBreak, ButtonState, 0);
 }
 
 
 
 ISR(USART_RXC_vect)
 {
-	Usart_PutChar(0xaa);
 	while(UCSRA&(1<<RXC))
 	{
 		
@@ -714,8 +743,9 @@ ISR(USART_RXC_vect)
 		UCSRB &= ~(1<<RXCIE); // clear the rx interrupt since we will get another interrupt as soon as we exit here! 
 		return; // in case there is no space left, we should just simply return!
 	}
-	Usart_PutChar(0xab);
 }
+
+
 
 
 ISR(TIMER1_COMPA_vect)
@@ -742,5 +772,52 @@ ISR(TIMER1_COMPA_vect)
 	{
 		DoorTick = 0;
 		MakeDoorStates();
+	}
+}
+
+
+uint8_t StartTimer(uint16_t ms)
+{
+	uint8_t i = 0;
+	for( ; i < 8; i++ )
+	{
+		if( !(UsedTimers&(1<<i)) )
+		{
+			EnterAtomic();
+			UsedTimers|= (1<<i);
+			WaitingTimer[i] = ms;
+			LeaveAtomic();
+			return i;
+		}
+	}
+	return 0xFF;
+}
+
+void StopTimer(uint8_t id)
+{
+	if( id < 8)
+	{	
+		EnterAtomic();
+		UsedTimers &= ~(1<<id);
+		WaitingTimer[id] = 0;
+		LeaveAtomic();
+	}
+}
+
+
+ISR(TIMER0_COMP_vect)
+{
+
+	for( int i = 0; i <8; i++ )
+	{
+		if( UsedTimers&(1<<i))
+		{
+			WaitingTimer[i]--;
+			if( WaitingTimer[i]==0)
+			{
+				SendEvent(SignalSourceEnvironment, TimerEvent, 0, 0);
+				UsedTimers &= ~(1<<i);
+			}
+		}
 	}
 }

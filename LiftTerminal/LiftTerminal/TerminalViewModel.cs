@@ -26,6 +26,7 @@ namespace LiftTerminal
         ObservableCollection<string> _traceCharacters = new ObservableCollection<string>();
         Dictionary<string, ComputeTraceLineDelegate> _traceLineOptions; 
         List<byte> _receivedTraceCharacters = new List<byte>();
+        List<byte> _statusBytes = new List<byte>();
         string _lineBreaks;
         static string _reminder = ""; 
         string _selectedComPort;
@@ -108,22 +109,22 @@ namespace LiftTerminal
 
         public bool IsEnabledL1
         {
-            get => (this._liftStatus & 1) == 1 ;
+            get => (this._liftStatus & 1) != 1 && _liftStatus != 0;
         }
 
         public bool IsEnabledL2
         {
-            get => (this._liftStatus & 2) == 2;
+            get => (this._liftStatus & 2) != 2 && _liftStatus != 0;
         }
 
         public bool IsEnabledL3
         {
-            get => (this._liftStatus & 4) == 4;
+            get => (this._liftStatus & 4) != 4 && _liftStatus != 0;
         }
 
         public bool IsEnabledL4
         {
-            get => (this._liftStatus & 8) == 8;
+            get => (this._liftStatus & 8) != 8 && _liftStatus != 0;
         }
 
         public string[] TraceOptions
@@ -358,7 +359,11 @@ namespace LiftTerminal
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-
+                _liftStatus = status;
+                RaisePropertyChanged("IsEnabledL1");
+                RaisePropertyChanged("IsEnabledL2");
+                RaisePropertyChanged("IsEnabledL3");
+                RaisePropertyChanged("IsEnabledL4");
             });
         }
 
@@ -369,8 +374,11 @@ namespace LiftTerminal
             {
                 if (_rxBuffer.TryDequeue(out byte data))
                 {
-                    tmpBuilder.Add(data);
-
+                    if(!_rxLiftStatus.EvalNextByte(data))
+                    {
+                        tmpBuilder.AddRange(_rxLiftStatus.Consumed);
+                        tmpBuilder.Add(data);
+                    }
                 }
             }
             _receivedTraceCharacters.AddRange(tmpBuilder);
