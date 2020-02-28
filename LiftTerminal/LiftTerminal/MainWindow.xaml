@@ -1,9 +1,9 @@
-﻿<Window x:Class="LiftTerminal.MainWindow"
+﻿<Window x:Class="AvrTerminal.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:LiftTerminal"
+        xmlns:local="clr-namespace:AvrTerminal"
         mc:Ignorable="d"
         Title="AVR Terminal" Height="450" Width="800">
     <Grid>
@@ -28,18 +28,36 @@
                 <ComboBox ItemsSource="{Binding AvailableBaudRates}" SelectedItem="{Binding SelectedBaudRate}"/>
                 <Button Command="{Binding CmdOpenClose}" Content="{Binding LabelOpenClose}"/>
             </ToolBar>
+            <ToolBar Name="TerminalTools">
+                <Button Width="20" Height="20" Background="White"
+                        Command="{Binding CmdOpenTrace}">
+                    <Image Source="Resources/open_metadata.png" Width="16" Height="16"/>
+                </Button>
+                <Button Width="20" Height="20" Background="White"
+                        Command="{Binding CmdClearTerminal}">
+                    <Image Source="Resources/clear_terminal.png" Width="16" Height="16" />
+                </Button>
+                <Button Width="20" Height="20" Background="White"
+                        Command="{Binding CmdSaveTrace}">
+                    <Image Source="Resources/save_trace.png" Width="16" Height="16" />
+                </Button>
+            </ToolBar>
             <ToolBar Name="LineBrakSettings"  HorizontalAlignment="Stretch">
                 <ComboBox ItemsSource="{Binding TraceOptions}" SelectedItem="{Binding TraceRepresentation}" MinWidth="75"/>
                 <TextBlock Text="Zeilentrennzeichen:"/>
                 <TextBox Text="{Binding LineBreaks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="150"/>
             </ToolBar>
-            <ToolBar Name="TerminalTools">
-                <Button Content="Clear Terminal" 
-                        Command="{Binding CmdClearTerminal}"/>
-            </ToolBar>
         </ToolBarTray>
         <ContentControl Grid.Row="3" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <ListBox ItemsSource="{Binding Path=TraceCharacters}" />
+            <TabControl>
+                <TabItem Header="Message View">
+                    <ListBox Name="MessageTrace" ItemsSource="{Binding Path=TraceMessages}" />
+                </TabItem>
+                <TabItem Header="Byte View">
+                    <ListBox Name="CharacterTrace" ItemsSource="{Binding Path=TraceCharacters}" />
+                </TabItem>
+                
+            </TabControl>
         </ContentControl>
         <GridSplitter Grid.Row="2" Grid.Column="1"  VerticalAlignment="Center" Height="5"
                       HorizontalAlignment="Stretch" Visibility="Visible" />
@@ -57,11 +75,16 @@
                         <Grid.RowDefinitions>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Label Grid.Row ="0" Grid.Column="0" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                        <TextBox Grid.Row ="0" Grid.Column="1" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
-                        <Button Grid.Row ="0" Grid.Column="2" Content="Write" Command="{Binding CmdWriteHexString}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
+                        <Label Grid.Row ="0" Grid.Column="0" Content="Input-Type:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <ComboBox Grid.Row ="0" Grid.Column="1" x:Name="InputType" ItemsSource="{Binding AvrAvailableInputTypes}" 
+                                  SelectedIndex="{Binding AvrSelectedInputType}"
+                                  Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                        <Label Grid.Row ="1" Grid.Column="0" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <TextBox Grid.Row ="1" Grid.Column="1" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                        <Button Grid.Row ="1" Grid.Column="2" Content="Write" Command="{Binding CmdWriteAvrInput}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
                                    Text="{Binding Status}"/>
                     </Grid>
                 </TabItem>

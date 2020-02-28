@@ -9,7 +9,7 @@ using System.Threading;
 using System.Management;
 using RuntimeCheck;
 
-namespace LiftTerminal
+namespace AvrTerminal
 {
     class SerialPortHandler
     {
@@ -77,7 +77,7 @@ namespace LiftTerminal
                             }
                             NotifyDataReceived(nrOfReceivedData);
                             nrOfReceivedData = 0;
-                            System.Threading.Thread.Sleep(100);
+                            System.Threading.Thread.Sleep(50);
                         }
                     }
                     catch(ThreadAbortException)
@@ -90,7 +90,9 @@ namespace LiftTerminal
                         _running = false;
                     }
                 }
-                
+
+                //_com.DiscardInBuffer();
+                _com.DiscardOutBuffer();
                 // in case there is an exception, it should be caught in the global handler!
                 _com.Dispose();
                 _com = null;

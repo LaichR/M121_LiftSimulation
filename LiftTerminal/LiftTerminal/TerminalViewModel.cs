@@ -14,18 +14,31 @@ using System.Collections.Concurrent;
 using Microsoft.Win32;
 using RuntimeCheck;
 
-namespace LiftTerminal
+namespace AvrTerminal
 {
+    delegate bool FormatInputDelegate(string input, out byte[] data);
     class TerminalViewModel: BindableBase
     {
         const string ReprAscii = "ASCII";
         const string ReprHex = "Hexadecimal";
+        static readonly string[] AvailableInputTypes = new[]
+        {
+            "Hex-String",
+            "signed two byte integer"
+        };
+
+        static readonly FormatInputDelegate[] FormatInput = new FormatInputDelegate[]
+        {
+            HexToByteArray,
+            ShortToByteArray,
+        };
 
         delegate IEnumerable<string> ComputeTraceLineDelegate(List<Byte> byteList);
 
         ObservableCollection<string> _traceCharacters = new ObservableCollection<string>();
         Dictionary<string, ComputeTraceLineDelegate> _traceLineOptions; 
         List<byte> _receivedTraceCharacters = new List<byte>();
+        ObservableCollection<string> _receivedTraceMessages = new ObservableCollection<string>();
         List<byte> _statusBytes = new List<byte>();
         string _lineBreaks;
         static string _reminder = ""; 
@@ -35,15 +48,19 @@ namespace LiftTerminal
         int _liftStatus;
         ComputeTraceLineDelegate _computeTraceLines;
         string _selectedTraceRepresentation = ReprHex;
+        int _selectedInputType = 0;
         DelegateCommand _cmdOpenClose;
         //DelegateCommand _cmdOpenTestLib;
         DelegateCommand _cmdWriteInputToAvr;
         DelegateCommand _cmdClearTerminal;
+        DelegateCommand _cmdOpenTrace;
+        DelegateCommand _cmdSaveTrace;
         
         ConcurrentQueue<byte> _rxBuffer = new ConcurrentQueue<byte>();
 
         SerialPortHandler _serialPortHandler;
-        LiftStatusReceiver _rxLiftStatus = new LiftStatusReceiver();
+        AvrStatusReceiver _rxAvrStatus = new AvrStatusReceiver();
+        TraceMessageHandler _traceHandler;
 
         ManagementEventWatcher _watcher = new ManagementEventWatcher();
         WqlEventQuery _disconnectedQuery = new WqlEventQuery("__InstanceDeletionEvent",
@@ -66,7 +83,8 @@ namespace LiftTerminal
             _computeTraceLines = ComputeLineBrakesHexContent;
             _serialPortHandler = new SerialPortHandler(_rxBuffer);
             _serialPortHandler.DataReceived += RxDataReceived;
-            _rxLiftStatus.StatusReceived += LiftStatusReceived;
+            _rxAvrStatus.StatusReceived += AvrStatusReceived;
+            _rxAvrStatus.TraceMessageReceived += AvrTraceMessageReceived;
 
             _cmdOpenClose = new DelegateCommand(() =>
             {
@@ -87,12 +105,12 @@ namespace LiftTerminal
             _cmdClearTerminal = new DelegateCommand(() =>
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(
-                    ()=>_traceCharacters.Clear()
-                    );
+                    () => { _traceCharacters.Clear(); _receivedTraceMessages.Clear(); }
+                    ) ;
             });
             _cmdWriteInputToAvr = new DelegateCommand(()=>
-                {
-                    if (ToByteArray(_avrInput, out byte[] bytes))
+                {   
+                    if (FormatInput[_selectedInputType](_avrInput, out byte[] bytes))
                     {
                         var packet = PackAvrMessage(bytes, AvrPacketType.TestCommand);
                         _serialPortHandler.Write(packet, 0, packet.Length);
@@ -104,7 +122,45 @@ namespace LiftTerminal
                     }
                 }, () => _serialPortHandler.PortIsOpen);
 
-            
+            _cmdOpenTrace = new DelegateCommand(() =>
+               {
+                   var dlg = new Microsoft.Win32.OpenFileDialog()
+                   {
+                       Filter = "Trace metadata|*.json"
+                   };
+                   if (dlg.ShowDialog() == true)
+                   {
+                       _traceHandler = new TraceMessageHandler(dlg.FileName);
+                       // in case
+                       _traceHandler.TraceInfoChanged += _traceHandler_TraceInfoChanged;
+                   }
+               });
+            _cmdSaveTrace = new DelegateCommand(() =>
+            {
+                var dlg = new Microsoft.Win32.SaveFileDialog();
+                if( dlg.ShowDialog() == true)
+                {
+                    using (var writer = new System.IO.StreamWriter(dlg.OpenFile()))
+                    {
+                        foreach( var s in _receivedTraceMessages)
+                        {
+                            writer.WriteLine(s);
+                        }
+                    }
+                }
+            }
+            );
+        }
+
+        private void _traceHandler_TraceInfoChanged(object sender, EventArgs e)
+        {
+            if (_serialPortHandler.PortIsOpen)
+            {
+                _serialPortHandler.StopCom();
+                _watcher.Stop();
+                RaisePropertyChanged("LabelOpenClose");
+                _cmdWriteInputToAvr.RaiseCanExecuteChanged();
+            }
         }
 
         public bool IsEnabledL1
@@ -192,11 +248,15 @@ namespace LiftTerminal
 
         public ObservableCollection<string> TraceCharacters
         {
-            get
-            {
-                return _traceCharacters;
-            }
+            get => _traceCharacters;
+            
         }
+
+        public ObservableCollection<string> TraceMessages
+        {
+            get => _receivedTraceMessages;
+        }
+
         public string LabelOpenClose
         {
             get
@@ -237,6 +297,23 @@ namespace LiftTerminal
             }
         }
 
+        public int AvrSelectedInputType
+        {
+            get
+            {
+                return _selectedInputType;
+            }
+            set
+            {
+                SetProperty<int>(ref _selectedInputType, value);
+            }
+        }
+
+        public string[] AvrAvailableInputTypes
+        {
+            get => AvailableInputTypes;
+        }
+
         public int[] AvailableBaudRates
         {
             get
@@ -261,7 +338,7 @@ namespace LiftTerminal
         //    }
         //}
 
-        public ICommand CmdWriteHexString
+        public ICommand CmdWriteAvrInput
         {
             get
             {
@@ -269,7 +346,25 @@ namespace LiftTerminal
             }
         }
 
-        static bool ToByteArray(string hexString, out byte[] byteArray )
+        public ICommand CmdOpenTrace
+        {
+            get
+            {
+                return _cmdOpenTrace;
+            }
+        }
+
+        static bool ShortToByteArray(string shortVal, out byte[] byteArray)
+        {
+            byteArray = null;
+            if( short.TryParse(shortVal, out short result) )
+            {
+                byteArray = BitConverter.GetBytes(result);
+            }
+            return false;
+        }
+
+        static bool HexToByteArray(string hexString, out byte[] byteArray )
         {
             var byteRepr = hexString.Split(',', ' ', ';');
             List<byte> bytes = new List<byte>();
@@ -355,7 +450,7 @@ namespace LiftTerminal
             _serialPortHandler.Write(packet, 0, packet.Length);
         }
 
-        private void LiftStatusReceived(object sender, int status)
+        private void AvrStatusReceived(object sender, int status)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
@@ -367,6 +462,19 @@ namespace LiftTerminal
             });
         }
 
+        private void AvrTraceMessageReceived(object sender, byte[] data)
+        {
+            if( _traceHandler != null )
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(
+                () =>
+                {
+                    var msg = _traceHandler.GetTraceMessagte(data);
+                    _receivedTraceMessages.Add( msg );
+                });
+            }
+        }
+
         private void RxDataReceived(object sender, int e)
         {
             List<byte> tmpBuilder = new List<byte>();
@@ -374,10 +482,9 @@ namespace LiftTerminal
             {
                 if (_rxBuffer.TryDequeue(out byte data))
                 {
-                    if(!_rxLiftStatus.EvalNextByte(data))
+                    if(!_rxAvrStatus.EvalNextByte(data))
                     {
-                        tmpBuilder.AddRange(_rxLiftStatus.Consumed);
-                        tmpBuilder.Add(data);
+                        tmpBuilder.AddRange(_rxAvrStatus.GetConsumed());
                     }
                 }
             }
@@ -420,6 +527,7 @@ namespace LiftTerminal
             _watcher.Query = _disconnectedQuery;
             _watcher.EventArrived += UsbDisconnectEventArrived;
             _watcher.EventArrived -= _watcher_EventArrived;
+            _watcher.Start();
         }
 
         public static byte[] PackAvrMessage(byte[] payload, AvrPacketType packetType)

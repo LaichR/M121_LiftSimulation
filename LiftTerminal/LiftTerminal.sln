@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiftTerminal", "LiftTerminal\LiftTerminal.csproj", "{B728C1CD-4360-4D86-91A8-58BE7A48B536}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvrTerminal", "LiftTerminal\AvrTerminal.csproj", "{B728C1CD-4360-4D86-91A8-58BE7A48B536}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestInterface", "TestInterface\TestInterface.csproj", "{D6A8916F-5AA1-4FA6-A757-3C9E07316AE8}"
 EndProject
