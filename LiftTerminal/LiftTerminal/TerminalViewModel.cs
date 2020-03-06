@@ -70,6 +70,8 @@ namespace AvrTerminal
                 new TimeSpan(0, 0, 1),
                 "TargetInstance ISA 'Win32_USBControllerDevice'");
 
+        MacroExpansionHandler _maExpHandler = new MacroExpansionHandler();
+
         public TerminalViewModel()
         {
             
@@ -162,6 +164,12 @@ namespace AvrTerminal
                 _cmdWriteInputToAvr.RaiseCanExecuteChanged();
             }
         }
+
+        public MacroExpansionHandler MacroExpHandler
+        {
+            get => _maExpHandler;
+        }
+
 
         public bool IsEnabledL1
         {
@@ -294,6 +302,14 @@ namespace AvrTerminal
             get
             {
                 return _cmdClearTerminal;
+            }
+        }
+
+        public ICommand CmdSaveTrace
+        {
+            get
+            {
+                return _cmdSaveTrace;
             }
         }
 
