@@ -27,7 +27,7 @@ namespace AvrTerminal
 
         public void UpdateTraceInfo()
         {
-            var re = new Regex(@"%(?<size>\d\d?)");
+            var re = new Regex(@"%(?<type>[sdhf])?(?<size>\d\d?)");
             var matches = re.Matches(TraceString);
             _reformattedTrace = TraceString.Trim('"');
             var offset = 2; // the trace id must not be read anymore!

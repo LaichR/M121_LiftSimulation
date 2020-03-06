@@ -11,9 +11,9 @@
             <RowDefinition Name= "topBorder" Height="10"/>
             <RowDefinition Name= "Tools" Height="1*"/>
             <RowDefinition Name=  "ToolsSplitter" Height="5"/>
-            <RowDefinition Name=  "Terminal" Height="8*"/>
+            <RowDefinition Name=  "Terminal" Height="5*"/>
             <RowDefinition Name=  "ButtonSplitter" Height="5"/>
-            <RowDefinition Name=  "Buttons" Height="3*"/>
+            <RowDefinition Name=  "Buttons" Height="5*"/>
             <RowDefinition Name="buttomBorder" Height="10"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -86,6 +86,48 @@
                         <Button Grid.Row ="1" Grid.Column="2" Content="Write" Command="{Binding CmdWriteAvrInput}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
                         <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
                                    Text="{Binding Status}"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Macro-Expansion" HorizontalAlignment="Stretch">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="10*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="5*"/>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="3*"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <ToolBarTray Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <ToolBar Name="MacroTools">
+                                <Button Command="{Binding MacroExpHandler.CmdReadFile}">
+                                    <Image Source="Resources/open_metadata.png" Width="16" Height="16"/>
+                                </Button>
+                                <Button Command="{Binding MacroExpHandler.CmdClearPpDefinitions}">
+                                    <Image Source="Resources/clear_terminal.png" Width="16" Height="16"/>
+                                </Button>
+                                <Button Command="{Binding MacroExpHandler.CmdCopyDefinesToClipboard}">
+                                    <Image Source="Resources/copy.png" Width="16" Height="16"/>
+                                </Button>
+                            </ToolBar>
+                        </ToolBarTray>
+                        <Label Content="Macro-Definitions:" Grid.Row="1" />
+                        <DataGrid Grid.Row="1" Grid.Column="1" ItemsSource="{Binding MacroExpHandler.PpDefines}" CanUserAddRows="True" CanUserDeleteRows="True" AutoGenerateColumns="False" >
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name" Width="1*" Binding="{Binding Path=Name}"/>
+                                <DataGridTextColumn Header="Replacement" Width="10*" Binding="{Binding Path=Replacement}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Label Content="Macro-Usage" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox Text="{Binding MacroExpHandler.PpUsage}" Grid.Row="2" Grid.Column="1" AcceptsReturn="True" IsReadOnly="False" />
+                        <Button Content="Expand" Grid.Row="2" Grid.Column="2" Command="{Binding MacroExpHandler.CmdExpand}" />
+                        <Label Content="Expanded" Grid.Row="3" Grid.Column="0"/>
+                        <TextBox Text="{Binding MacroExpHandler.Expanded, UpdateSourceTrigger=PropertyChanged}" Grid.Row="3" Grid.Column="1" 
+                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Visible" />
                     </Grid>
                 </TabItem>
                 <!--<TabItem Header="TestLibrary">
