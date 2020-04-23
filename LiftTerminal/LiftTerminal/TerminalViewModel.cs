@@ -154,6 +154,8 @@ namespace AvrTerminal
             );
         }
 
+        internal event EventHandler<string> TraceMessageInserted;
+
         private void _traceHandler_TraceInfoChanged(object sender, EventArgs e)
         {
             if (_serialPortHandler.PortIsOpen)
@@ -485,8 +487,22 @@ namespace AvrTerminal
                 System.Windows.Application.Current.Dispatcher.Invoke(
                 () =>
                 {
-                    var msg = _traceHandler.GetTraceMessagte(data);
-                    _receivedTraceMessages.Add( msg );
+                    var msg = "** error while unpacking data **";
+                    try
+                    {
+                        msg = _traceHandler.GetTraceMessagte(data);
+                        
+                    }
+                    catch { }
+                    _receivedTraceMessages.Add(msg);
+                    if( _receivedTraceMessages.Count() > 1000)
+                    {
+                        _receivedTraceMessages.RemoveAt(0); // avoid filling all the memory!
+                    }
+                    if (TraceMessageInserted != null)
+                    {
+                        TraceMessageInserted(this, msg);
+                    }
                 });
             }
         }

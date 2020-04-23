@@ -15,9 +15,10 @@ namespace AvrTerminal
     {
         Thread _runner;
         AutoResetEvent _awaitPortOpen = new AutoResetEvent(false);
+        AutoResetEvent _awaitDataAvailable = new AutoResetEvent(false);
         SerialPort _com;
         bool _running = false;
-        static int[] _availableBaudRates = new[] { 38400 };
+        static int[] _availableBaudRates = new[] { 250000, 38400  };
         ConcurrentQueue<byte> _rxBuffer;
         object _synchRoot = new object();
 
@@ -60,44 +61,59 @@ namespace AvrTerminal
                     try
                     {
                         _com.Open();
+                        _com.DataReceived += _com_DataReceived;
                         _running = true;
+
                     }
                     catch { }
 
                     _awaitPortOpen.Set();
-                    int nrOfReceivedData = 0;
+                    
                     try
                     {
                         while (_running)
                         {
-                            while (_com.BytesToRead > 0)
+                            _awaitDataAvailable.WaitOne(5000);
+                            int nrOfReceivedData = 0;
+                            while (_com.BytesToRead > 0 && nrOfReceivedData < 1024)
                             {
                                 _rxBuffer.Enqueue((byte)_com.ReadByte());
                                 nrOfReceivedData++;
                             }
                             NotifyDataReceived(nrOfReceivedData);
                             nrOfReceivedData = 0;
-                            System.Threading.Thread.Sleep(50);
                         }
                     }
                     catch(ThreadAbortException)
                     {
-                        _com.DiscardInBuffer();
-                        _com.DiscardOutBuffer();
+                        try
+                        {
+                            _com.DataReceived -= _com_DataReceived;
+                            _com.Dispose();
+                        }
+                        catch { }
+                        _com = null;
                         _running = false;
                     }
                     catch {
                         _running = false;
                     }
                 }
+                try
+                {
 
-                //_com.DiscardInBuffer();
-                _com.DiscardOutBuffer();
-                // in case there is an exception, it should be caught in the global handler!
-                _com.Dispose();
+                    _com.DataReceived -= _com_DataReceived;
+                    //_com.DiscardInBuffer();
+                    //_com.DiscardOutBuffer();
+                    //_com.Close();
+                    // in case there is an exception, it should be caught in the global handler!
+                    _com.Dispose();
+                }
+                catch { }
                 _com = null;
                 _runner = null;
                 _running = false;
+                
                 
             })
             {
@@ -106,6 +122,11 @@ namespace AvrTerminal
             _runner.Start();
             _awaitPortOpen.WaitOne(1000);
 
+        }
+
+        private void _com_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            _awaitDataAvailable.Set();
         }
 
         public static string[] AvailablePorts

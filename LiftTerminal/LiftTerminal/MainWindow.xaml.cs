@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Collections.ObjectModel;
 
 namespace AvrTerminal
 {
@@ -36,7 +37,15 @@ namespace AvrTerminal
             AddHandler(FrameworkElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(Button_MouseLeftDown), true);
             AddHandler(FrameworkElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Button_MouseLeftUp), true);
             Dispatcher.UnhandledException += Dispatcher_UnhandledException;
+            _terminalViewModel.TraceMessageInserted += _terminalViewModel_TraceMessageInserted;
         }
+
+        private void _terminalViewModel_TraceMessageInserted(object sender, string message)
+        {            
+            MessageTrace.ScrollIntoView(message);
+        }
+
+        
 
         private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {

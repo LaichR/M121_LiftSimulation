@@ -29,15 +29,15 @@
                 <Button Command="{Binding CmdOpenClose}" Content="{Binding LabelOpenClose}"/>
             </ToolBar>
             <ToolBar Name="TerminalTools">
-                <Button Width="20" Height="20" Background="White"
+                <Button Width="20" Height="20" Background="White" ToolTip="Open trace information"
                         Command="{Binding CmdOpenTrace}">
                     <Image Source="Resources/open_metadata.png" Width="16" Height="16"/>
                 </Button>
-                <Button Width="20" Height="20" Background="White"
+                <Button Width="20" Height="20" Background="White" ToolTip="Clear trace window"
                         Command="{Binding CmdClearTerminal}">
                     <Image Source="Resources/clear_terminal.png" Width="16" Height="16" />
                 </Button>
-                <Button Width="20" Height="20" Background="White"
+                <Button Width="20" Height="20" Background="White" ToolTip="Save trace to file"
                         Command="{Binding CmdSaveTrace}">
                     <Image Source="Resources/save_trace.png" Width="16" Height="16" />
                 </Button>
@@ -98,19 +98,19 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="1*"/>
                             <RowDefinition Height="5*"/>
-                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="2*"/>
                             <RowDefinition Height="3*"/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
                         <ToolBarTray Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <ToolBar Name="MacroTools">
-                                <Button Command="{Binding MacroExpHandler.CmdReadFile}">
+                                <Button Command="{Binding MacroExpHandler.CmdReadFile}" ToolTip="Import Header File" >
                                     <Image Source="Resources/open_metadata.png" Width="16" Height="16"/>
                                 </Button>
-                                <Button Command="{Binding MacroExpHandler.CmdClearPpDefinitions}">
+                                <Button Command="{Binding MacroExpHandler.CmdClearPpDefinitions}" ToolTip="Clear all Macro-Definitions">
                                     <Image Source="Resources/clear_terminal.png" Width="16" Height="16"/>
                                 </Button>
-                                <Button Command="{Binding MacroExpHandler.CmdCopyDefinesToClipboard}">
+                                <Button Command="{Binding MacroExpHandler.CmdCopyDefinesToClipboard}" ToolTip="Copy Makro-Definitions to Clipboard">
                                     <Image Source="Resources/copy.png" Width="16" Height="16"/>
                                 </Button>
                             </ToolBar>
@@ -122,11 +122,11 @@
                                 <DataGridTextColumn Header="Replacement" Width="10*" Binding="{Binding Path=Replacement}"/>
                             </DataGrid.Columns>
                         </DataGrid>
-                        <Label Content="Macro-Usage" Grid.Row="2" Grid.Column="0"/>
-                        <TextBox Text="{Binding MacroExpHandler.PpUsage}" Grid.Row="2" Grid.Column="1" AcceptsReturn="True" IsReadOnly="False" />
-                        <Button Content="Expand" Grid.Row="2" Grid.Column="2" Command="{Binding MacroExpHandler.CmdExpand}" />
+                        <Label Content="Code-Line" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox Text="{Binding MacroExpHandler.PpUsage, UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Grid.Column="1" AcceptsReturn="True" IsReadOnly="False" />
+                        <Button Content="Preprocess" Grid.Row="2" Grid.Column="2" Command="{Binding MacroExpHandler.CmdExpand}" />
                         <Label Content="Expanded" Grid.Row="3" Grid.Column="0"/>
-                        <TextBox Text="{Binding MacroExpHandler.Expanded, UpdateSourceTrigger=PropertyChanged}" Grid.Row="3" Grid.Column="1" 
+                        <TextBox Text="{Binding MacroExpHandler.Expanded}" Grid.Row="3" Grid.Column="1" 
                                  TextWrapping="Wrap" VerticalScrollBarVisibility="Visible" />
                     </Grid>
                 </TabItem>

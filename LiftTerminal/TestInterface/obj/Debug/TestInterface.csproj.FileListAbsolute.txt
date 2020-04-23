@@ -1,4 +1,0 @@
-C:\Users\rolfl\Documents\GitHub\M121_LiftSimulation\LiftTerminal\TestInterface\bin\Debug\TestInterface.dll
-C:\Users\rolfl\Documents\GitHub\M121_LiftSimulation\LiftTerminal\TestInterface\bin\Debug\TestInterface.pdb
-C:\Users\rolfl\Documents\GitHub\M121_LiftSimulation\LiftTerminal\TestInterface\obj\Debug\TestInterface.dll
-C:\Users\rolfl\Documents\GitHub\M121_LiftSimulation\LiftTerminal\TestInterface\obj\Debug\TestInterface.pdb

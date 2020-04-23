@@ -9,21 +9,27 @@ using Clang.Preprocessor;
 using Prism.Mvvm;
 using System.Windows.Input;
 using Prism.Commands;
+using System.Configuration;
 
 namespace AvrTerminal
 {
     class MacroExpansionHandler: BindableBase
     {
-        
+
+        const string ApplicationIncludes = "ApplicationIncludes";
+        const string SystemIncludes = "SystemIncludes";
+
         ObservableCollection<PpDefineProxy> _ppDefines = new ObservableCollection<PpDefineProxy>();
         string _expanded;
         string _ppUsage;
+        string[] _appIncludes;
+        string[] _sysIncludes;
         DelegateCommand _cmdExpand;
         DelegateCommand _cmdReadFile;
         DelegateCommand _cmdClearPpDefinitions;
         DelegateCommand _cmdCopyToClipboard; 
 
-        PpContext _ppContext = new PpContext();
+        PpContext _ppContext;
 
         List<string> _expansionTrace = new List<string>();
  
@@ -34,6 +40,9 @@ namespace AvrTerminal
             _cmdReadFile = new DelegateCommand(ReadPpDefinitionFile);
             _cmdClearPpDefinitions = new DelegateCommand(ClearPpDefinitions);
             _cmdCopyToClipboard = new DelegateCommand(CopyDefinesToClipboard);
+            _appIncludes = ConfigurationManager.AppSettings[ApplicationIncludes].Split(';');
+            _sysIncludes = ConfigurationManager.AppSettings[SystemIncludes].Split(';');
+            ResetPpContext();
         }
 
         public ObservableCollection<PpDefineProxy> PpDefines
@@ -85,6 +94,7 @@ namespace AvrTerminal
             PpContext ppContext = _ppContext;
             foreach( var ppDef in _ppDefines)
             {
+                ppContext.UndefineMacro(ppDef.Name);
                 ppContext.SetPredefinedSymbol(ppDef.Name, ppDef.Replacement);
             }
             ppContext.ResetMacros();
@@ -113,8 +123,10 @@ namespace AvrTerminal
             dlg.DefaultExt = ".h";
             if( dlg.ShowDialog() == true )
             {
-                var scanner = new ClangScanner(_ppContext, dlg.FileName);
-                PpUtilities.JoinTokens(scanner);
+                using (var scanner = new ClangScanner(_ppContext, dlg.FileName))
+                {
+                    PpUtilities.JoinTokens(scanner);
+                }
             }
             foreach( var define  in _ppContext.GetPpDefines())
             {
@@ -129,10 +141,29 @@ namespace AvrTerminal
             }
         }
 
+        private void ResetPpContext()
+        {
+            _ppContext = new PpContext();
+            foreach( var p in _appIncludes)
+            {
+                if (System.IO.Directory.Exists(p))
+                {
+                    _ppContext.AddApplicationInclude(p);
+                }
+            }
+            foreach( var p in _sysIncludes)
+            {
+                if (System.IO.Directory.Exists(p))
+                {
+                    _ppContext.AddSystemInclude(p);
+                }
+            }
+        }
+
         private void ClearPpDefinitions()
         {
+            ResetPpContext();
             _ppDefines.Clear();
-            _ppContext = new PpContext();
             _expanded = "";
             _ppUsage = "";
             RaisePropertyChanged("Expanded");
