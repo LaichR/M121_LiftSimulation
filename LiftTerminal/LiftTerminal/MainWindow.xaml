@@ -3,9 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:pl ="clr-namespace:PlotLib;assembly=PlotLib"
+        xmlns:mdd ="clr-namespace:Builder.MetadataDescription;assembly=Builder"
         xmlns:local="clr-namespace:AvrTerminal"
         mc:Ignorable="d"
-        Title="AVR Terminal" Height="450" Width="800">
+        Title="AVR Terminal" Height="450" Width="800" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Name= "topBorder" Height="10"/>
@@ -56,7 +58,297 @@
                 <TabItem Header="Byte View">
                     <ListBox Name="CharacterTrace" ItemsSource="{Binding Path=TraceCharacters}" />
                 </TabItem>
-                
+                <TabItem Header="PlotView">
+                    <Grid Background="LightGray">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="2*"/>
+                            <RowDefinition Height="2*"/>
+                            <RowDefinition Height="2*"/>
+                            <RowDefinition Height="2*"/>
+                            <RowDefinition Height="2*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Name="PlotCol" Width="5*"/>
+                            <ColumnDefinition Name="Label_Col" Width="1*"/>
+                            <ColumnDefinition Name="Settings_Col" Width="1*"/>
+                            <ColumnDefinition Name="RichtBorder" Width="20"/>
+                        </Grid.ColumnDefinitions>
+                        <pl:Plot VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="0" Grid.Row="0"
+                                 Grid.RowSpan="5"
+                                 Title="Avr Output"
+                                 Background="White"
+                                 LogicalHeight="{Binding Path=LogicalHeigt}" 
+                                 LogicalWidth="{Binding Path=LogicalWdith}"
+                                 DataSource="{Binding Path=CapturedData}"
+                                 LogicalRange="{Binding Path=CapturedData}">
+                                 
+                            <pl:Plot.PlotElements>
+                                <pl:PlotLine LineColor="Red" />
+                                <pl:PlotAxis Orientation="Horizontal" NrOfTicks="2" UpdateOnPositionChange="False"/>
+                                <pl:PlotAxis Orientation="Vertical"/>
+                            </pl:Plot.PlotElements>
+                            
+                            
+                        </pl:Plot>
+                        <Label Content="Left" Grid.Row="0" Grid.Column="1" Margin="20,0,0,0"  VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Path=LogicalX}" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" 
+                                 TextAlignment="Right"/>
+                        <Label Content="Width" Grid.Row="1" Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Path=LogicalWidth}" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" 
+                                 TextAlignment="Right" />
+                        <Label Content="Hight" Grid.Row="2" Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Path=LogicalHeight}" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"
+                                 TextAlignment="Right"/>
+                        <Label Content="Offset" Grid.Row="3" Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Path=DataOffset}" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center"
+                                 TextAlignment="Right"/>
+                        <Label Content="Scale" Grid.Row="4" Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Path=DataScale}" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" 
+                                 TextAlignment="Right"/>
+
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Register View">
+                    <Grid Background="LightGray">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="6*"/>
+                            <RowDefinition Height="1*"/>
+                        </Grid.RowDefinitions>
+                        <TreeView Grid.Row="0"  Grid.RowSpan="3" ItemsSource="{Binding Path=HwSymbols.RegisterTree}" 
+                                  SelectedItemChanged="TreeView_SelectedItemChanged">
+                            <TreeView.Resources>
+                                
+                                <HierarchicalDataTemplate DataType="{x:Type mdd:HardwareSymbolAccess}"
+                                                          ItemsSource="{Binding Children}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </Grid>
+                                </HierarchicalDataTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type mdd:MemorySymbol }"
+                                        ItemsSource="{Binding Children}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"  Text="{Binding Address}" TextAlignment="Right" Width="30"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="20,0,0,0"/>
+                                    </Grid>
+                                </HierarchicalDataTemplate>
+                                
+                                <DataTemplate DataType="{x:Type mdd:SkalarField}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"  Text="{Binding Address}" TextAlignment="Right" Width="30"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="20,0,0,0"/>
+                                    </Grid>
+                                </DataTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type mdd:StructField}"
+                                                           ItemsSource="{Binding Children}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"  Text="{Binding Address}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="20,0,0,0"/>
+                                    </Grid>
+
+                                </HierarchicalDataTemplate>
+                                
+                            </TreeView.Resources>
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Read from device" IsEnabled="{Binding HwSymbols.CanRead}"
+                                              Command="{Binding HwSymbols.CmdReadFromCurrentNode}"/>
+                                    <MenuItem Header="Write to device" IsEnabled="{Binding HwSymbols.CanWrite}"
+                                              Command="{Binding HwSymbols.CmdWriteCurrentNode}"/>
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                        </TreeView>
+                        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" VerticalAlignment="Stretch" ShowsPreview="True" Grid.RowSpan="3" HorizontalAlignment="Center"/>
+                        <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" Margin="0,20,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="1*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="2*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+                            <GridSplitter Grid.Row="1" 
+                                          Grid.ColumnSpan="2"
+                                          HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="5"/>
+                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical">
+                                <Button Content="Read from Device" Command="{Binding HwSymbols.CmdReadFromCurrentNode}" 
+                                        IsEnabled="{Binding HwSymbols.CanRead}" />
+                                <Button Content="Write to Device" Command="{Binding HwSymbols.CmdWriteCurrentNode}" 
+                                        IsEnabled="{Binding HwSymbols.CanWrite}"/>
+                            </StackPanel>
+                            <DataGrid Name="SkalarFieldDetails"
+                                      Margin="5.0,0.0,5.0,5.0" AutoGenerateColumns="False" HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Top" ItemsSource="{Binding Path=HwSymbols.SelectedRegisters}" >
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Address" Binding="{Binding Address}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="R/W" Binding="{Binding AccessType}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Dec-Value" Binding="{Binding ValueDecimalString, Mode=TwoWay, ValidatesOnExceptions=True}" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="RO">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="None">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Hex-Value" Binding="{Binding Path=ValueHexString, Mode=TwoWay, ValidatesOnExceptions=True }">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="RO">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="None">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Bin-Value" Binding="{Binding ValueBinaryString, Mode=TwoWay, ValidatesOnExceptions=True}" >
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="RO">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding AccessType}" Value="None">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+
+                                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="TextWrapping" Value="Wrap" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <DataGrid Grid.Row="2" Name="BitfieldTable" ItemsSource="{Binding Path=HwSymbols.Bitfields}" 
+                                Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Top"
+                                  Margin="5.0,5.0,5.0,0.0" 
+                                  Height="Auto" AutoGenerateColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Bitfield" Binding="{Binding Name}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Offset" Binding="{Binding Offset}" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Width" Binding="{Binding Width}" IsReadOnly="True" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+
+                                    <DataGridTextColumn Header="Dec-Value" Binding="{Binding ValueDecimalString}" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Hex-Value" Binding="{Binding ValueHexString}" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Bin-Value" Binding="{Binding ValueBinaryString, ValidatesOnExceptions=True}" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="DataGridCell">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" IsReadOnly="True" >
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="TextWrapping" Value="Wrap" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Grid> 
+                </TabItem>
             </TabControl>
         </ContentControl>
         <GridSplitter Grid.Row="2" Grid.Column="1"  VerticalAlignment="Center" Height="5"
@@ -76,6 +368,7 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
                         <Label Grid.Row ="0" Grid.Column="0" Content="Input-Type:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                         <ComboBox Grid.Row ="0" Grid.Column="1" x:Name="InputType" ItemsSource="{Binding AvrAvailableInputTypes}" 
@@ -84,7 +377,20 @@
                         <Label Grid.Row ="1" Grid.Column="0" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                         <TextBox Grid.Row ="1" Grid.Column="1" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         <Button Grid.Row ="1" Grid.Column="2" Content="Write" Command="{Binding CmdWriteAvrInput}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
+                        <Label Grid.Row="2" Grid.Column="0  " Content="PWM-Control:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <Slider Minimum="1" Maximum="255" Width="255" Margin="5,0,20,0" VerticalAlignment="Center"
+                                    TickFrequency="10" TickPlacement="Both" ValueChanged="Slider_ValueChanged"  Value="{Binding PwmDutyCycle}"/>
+                            
+
+                            <RadioButton GroupName="Pwms" Name="Pwm1" IsChecked="{Binding UsePwm1}" VerticalAlignment="Center">
+                                <Label Content="Pwm1"/>
+                            </RadioButton>
+                            <RadioButton GroupName="Pwms" Name="Pwm2" IsChecked="{Binding UsePwm2}" VerticalAlignment="Center">
+                                <Label Content="Pwm2"/>
+                            </RadioButton>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
                                    Text="{Binding Status}"/>
                     </Grid>
                 </TabItem>

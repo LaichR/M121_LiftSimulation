@@ -13,6 +13,11 @@ using Prism.Commands;
 using System.Collections.Concurrent;
 using Microsoft.Win32;
 using RuntimeCheck;
+using PlotLib;
+using PlotLib.DataSources;
+using PlotLib.Interface;
+using System.Security.RightsManagement;
+using System.Windows;
 
 namespace AvrTerminal
 {
@@ -32,6 +37,8 @@ namespace AvrTerminal
             HexToByteArray,
             ShortToByteArray,
         };
+
+        
 
         delegate IEnumerable<string> ComputeTraceLineDelegate(List<Byte> byteList);
 
@@ -55,11 +62,22 @@ namespace AvrTerminal
         DelegateCommand _cmdClearTerminal;
         DelegateCommand _cmdOpenTrace;
         DelegateCommand _cmdSaveTrace;
+        DelegateCommand _cmdSliderValueChanged;
+       
+        PlotLib.DataSources.DynamicDataSource _capturedData = new DynamicDataSource();
+        double _dataOffset = 0;
+        double _dataScale = 1.0;
+
+        // pwm control
+        ushort _curPwm;
+        byte[] _curPwmValue = { 127, 127 };
+
         
         ConcurrentQueue<byte> _rxBuffer = new ConcurrentQueue<byte>();
-
+        RegisterViewModel _hwSymbols;
         SerialPortHandler _serialPortHandler;
-        AvrStatusReceiver _rxAvrStatus = new AvrStatusReceiver();
+        readonly AvrRegAccess _registerAccess;
+        readonly AvrStatusReceiver _rxAvrStatus = new AvrStatusReceiver();
         TraceMessageHandler _traceHandler;
 
         ManagementEventWatcher _watcher = new ManagementEventWatcher();
@@ -80,6 +98,7 @@ namespace AvrTerminal
                 {ReprAscii, ComputeLineBrakesAsciiContent  },
                 {ReprHex, ComputeLineBrakesHexContent }
             };
+            
             _watcher.Query = _disconnectedQuery;
             _watcher.EventArrived += UsbDisconnectEventArrived;
             _computeTraceLines = ComputeLineBrakesHexContent;
@@ -87,6 +106,8 @@ namespace AvrTerminal
             _serialPortHandler.DataReceived += RxDataReceived;
             _rxAvrStatus.StatusReceived += AvrStatusReceived;
             _rxAvrStatus.TraceMessageReceived += AvrTraceMessageReceived;
+            _registerAccess = new AvrRegAccess(_serialPortHandler, _rxAvrStatus);
+            _hwSymbols = new RegisterViewModel( _registerAccess);
 
             _cmdOpenClose = new DelegateCommand(() =>
             {
@@ -124,6 +145,12 @@ namespace AvrTerminal
                     }
                 }, () => _serialPortHandler.PortIsOpen);
 
+            _cmdSliderValueChanged = new DelegateCommand(()=>
+            {
+                //var packet = PackPwmConfig();
+                //_serialPortHandler.Write(packet, 0, packet.Length);
+            }, ()=> _serialPortHandler.PortIsOpen);
+
             _cmdOpenTrace = new DelegateCommand(() =>
                {
                    var dlg = new Microsoft.Win32.OpenFileDialog()
@@ -155,6 +182,65 @@ namespace AvrTerminal
         }
 
         internal event EventHandler<string> TraceMessageInserted;
+
+        public RegisterViewModel HwSymbols
+        {
+            get => _hwSymbols;
+        }
+
+        public DynamicDataSource CapturedData
+        {
+            get => _capturedData;
+        }
+
+        public double LogicalX
+        {
+            get => _capturedData.LogicalX;
+            set
+            {
+                _capturedData.LogicalX = value;
+                RaisePropertyChanged("LogicalX");
+            }
+        }
+
+        public double LogicalWidth
+        {
+            get => _capturedData.LogicalWidth;
+            set
+            {
+                _capturedData.LogicalWidth = value;
+                RaisePropertyChanged("LogicalWidht");
+            }
+        }
+
+        public double LogicalHeight
+        {
+            get => _capturedData.LogicalHeight;
+            set
+            {
+                _capturedData.LogicalHeight = value;
+                RaisePropertyChanged("LogicalHeight");
+            }
+        }
+
+        public double DataOffset
+        {
+            get => _dataOffset;
+            set
+            {
+                SetProperty<double>(ref _dataOffset, value);
+            }
+        }
+
+        public double DataScale
+        {
+            get => _dataScale;
+            set
+            {
+                SetProperty<double>(ref _dataScale, value);
+            }
+        }
+
 
         private void _traceHandler_TraceInfoChanged(object sender, EventArgs e)
         {
@@ -348,14 +434,6 @@ namespace AvrTerminal
             }
         }
 
-        //public ICommand CmdTestLibOpen
-        //{
-        //    get
-        //    {
-        //        return _cmdOpenTestLib;
-        //    }
-        //}
-
         public ICommand CmdWriteAvrInput
         {
             get
@@ -370,6 +448,15 @@ namespace AvrTerminal
             {
                 return _cmdOpenTrace;
             }
+        }
+
+        internal void Shutdown()
+        {
+
+            _serialPortHandler.DataReceived -= RxDataReceived;
+            _rxAvrStatus.StatusReceived -= AvrStatusReceived;
+            _rxAvrStatus.TraceMessageReceived -= AvrTraceMessageReceived;
+
         }
 
         static bool ShortToByteArray(string shortVal, out byte[] byteArray)
@@ -487,21 +574,30 @@ namespace AvrTerminal
                 System.Windows.Application.Current.Dispatcher.Invoke(
                 () =>
                 {
-                    var msg = "** error while unpacking data **";
+                    object evaluatedData = "** error while unpacking data **";
+                    var traceInfo = TraceInfoType.TraceMessage;
                     try
                     {
-                        msg = _traceHandler.GetTraceMessagte(data);
+                        traceInfo = _traceHandler.EvalTrace(data, out evaluatedData);
                         
                     }
                     catch { }
-                    _receivedTraceMessages.Add(msg);
-                    if( _receivedTraceMessages.Count() > 1000)
+
+                    if (traceInfo == TraceInfoType.TraceMessage)
                     {
-                        _receivedTraceMessages.RemoveAt(0); // avoid filling all the memory!
+                        _receivedTraceMessages.Add((string)evaluatedData);
+                        if (_receivedTraceMessages.Count() > 1000)
+                        {
+                            _receivedTraceMessages.RemoveAt(0); // avoid filling all the memory!
+                        }
+                        if (TraceMessageInserted != null)
+                        {
+                            TraceMessageInserted(this, (string)evaluatedData);
+                        }
                     }
-                    if (TraceMessageInserted != null)
+                    else
                     {
-                        TraceMessageInserted(this, msg);
+                        _capturedData.PutData((double)evaluatedData* _dataScale + _dataOffset);
                     }
                 });
             }
@@ -575,5 +671,42 @@ namespace AvrTerminal
             packet.AddRange(payload);
             return packet.ToArray();
         }
+
+        public bool UsePwm1
+        {
+            get => _curPwm == 0;
+            set
+            {
+                if (value) _curPwm = 0;
+                //else _curPwm = 1;
+            }
+        }
+
+        public bool UsePwm2
+        {
+            get => _curPwm == 1;
+            set
+            {
+                if (value) _curPwm = 1;
+                //else _curPwm = 0;
+            }
+        }
+
+        public byte PwmDutyCycle
+        {
+            get => _curPwmValue[_curPwm];
+            set => _curPwmValue[_curPwm] = value;
+        }
+
+        public ICommand CmdSliderValueChanged
+        {
+            get => _cmdSliderValueChanged;
+        }
+
+        //byte[] PackPwmConfig()
+        //{
+
+        //}
+
     }
 }

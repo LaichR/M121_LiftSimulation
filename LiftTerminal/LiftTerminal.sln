@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestInterface", "TestInterf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RuntimeCheck", "..\..\RuntimeCheck\RuntimeCheck\RuntimeCheck\RuntimeCheck.csproj", "{98370414-7515-4DC2-9BE8-D145BE42D50B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlotLib", "..\..\Plots\PlotLib\PlotLib.csproj", "{D6796F94-DC06-4C73-8EC6-4CE5747E8753}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Builder", "..\..\Builder\Builder\Builder.csproj", "{B0FA8AA2-96A4-4DBA-A14F-D5AF70A135D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{98370414-7515-4DC2-9BE8-D145BE42D50B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98370414-7515-4DC2-9BE8-D145BE42D50B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98370414-7515-4DC2-9BE8-D145BE42D50B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6796F94-DC06-4C73-8EC6-4CE5747E8753}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6796F94-DC06-4C73-8EC6-4CE5747E8753}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6796F94-DC06-4C73-8EC6-4CE5747E8753}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6796F94-DC06-4C73-8EC6-4CE5747E8753}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0FA8AA2-96A4-4DBA-A14F-D5AF70A135D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0FA8AA2-96A4-4DBA-A14F-D5AF70A135D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0FA8AA2-96A4-4DBA-A14F-D5AF70A135D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0FA8AA2-96A4-4DBA-A14F-D5AF70A135D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

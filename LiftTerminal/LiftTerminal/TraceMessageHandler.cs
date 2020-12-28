@@ -7,6 +7,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PlotLib.DataSources;
 
 
 namespace AvrTerminal
@@ -17,18 +18,28 @@ namespace AvrTerminal
         
         List<PackParamDelegate> _unpackParams = new List<PackParamDelegate>();
 
+        Func<object[], object> EvalData;
+
+        TraceInfoType _type;
+
         string _reformattedTrace;
         public string @class { get; set; }
         public int MsgId { get; set; }
         public string TraceString { get; set; }
+
+        public TraceInfoType InfoType => _type;
+        
+
         public string File { get; set; }
         public int LineNumber { get; set; }
         public int NumberOfArguments { get; set; }
 
         public void UpdateTraceInfo()
         {
+            _type = TraceInfoType.TraceMessage;
             var re = new Regex(@"%(?<type>[sdhf])?(?<size>\d\d?)");
             var matches = re.Matches(TraceString);
+            
             _reformattedTrace = TraceString.Trim('"');
             var offset = 2; // the trace id must not be read anymore!
             for (int i = 0; i < matches.Count; i++)
@@ -40,19 +51,23 @@ namespace AvrTerminal
                 var replacement = string.Format("{{{0}:X02}}", i);
                 _reformattedTrace = re.Replace(_reformattedTrace, replacement, 1);
             }
+            EvalData = (x) => string.Format(_reformattedTrace, x);
+            if (TraceString.Contains("@plot"))
+            {
+                _type = TraceInfoType.PlotData;
+                EvalData = (x) => (double)Convert.ToDouble(x.First());
+            }
         }
 
-        public string GetTraceMessage(byte[] data)
+        public object EvalTrace(byte[] data )
         {
             List<object> unpacked = new List<object>();
             foreach( var up in _unpackParams)
             {
                 unpacked.Add(up(data));
             }
-            return string.Format(_reformattedTrace, unpacked.ToArray());
+            return EvalData(unpacked.ToArray());
         }
-
-       
 
     }
 
@@ -60,6 +75,7 @@ namespace AvrTerminal
     {
         Dictionary<int, TraceInfo> _traceDictionary = new Dictionary<int, TraceInfo>();
         FileSystemWatcher _traceInfoWatcher;
+        TraceInfo _lastTraceInfo;
         string _fileName;
 
         public event EventHandler TraceInfoChanged;
@@ -87,15 +103,28 @@ namespace AvrTerminal
             }
         }
 
-        public string GetTraceMessagte( byte[] data)
+        public TraceInfoType EvalTrace( byte[] data, out object traceData)
         {
             var msgId = Unpack(data, 0, 2);
-            if( _traceDictionary.TryGetValue(msgId, out TraceInfo traceInfo))
+            var infoType = TraceInfoType.TraceMessage;
+            traceData = string.Format("unknown message {0}", msgId);
+            if (msgId == _lastTraceInfo?.MsgId)
             {
-                return traceInfo.GetTraceMessage(data);
+                infoType = _lastTraceInfo.InfoType;
+                traceData = _lastTraceInfo.EvalTrace(data);
             }
-            return string.Format("unknown message {0}", msgId);
+            else
+            {
+                if (_traceDictionary.TryGetValue(msgId, out TraceInfo traceInfo))
+                {
+                    infoType = traceInfo.InfoType;
+                    traceData = traceInfo.EvalTrace(data);
+                    _lastTraceInfo = traceInfo;
+                }
+            }
+            return infoType;
         }
+        
 
         static public int Unpack(byte[] data, int offset, int nrOfBytes)
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,12 +18,18 @@ namespace AvrTerminal
             WaitForStatus,
             WaitForDoorOpen,
             WaitForTraceMsgLen,
-            RxTraceMessage
+            RxTraceMessage,
+            WaitRxReadRegLen,
+            WaitRxReadRegData,
+            WaitRxWriteRegStatus,
         }
         List<byte> _consumedHeader = new List<byte>();
         List<byte> _traceMessage = new List<byte>();
+        List<byte> _regData = new List<byte>(4);
         int _expectedTraceBytes = 0;
         int _receivedTraceBytes = 0;
+        int _expectedRegisterBytes = 0;
+        int _receivedRegisterBytes = 0;
         RxState _currentState = RxState.WaitForStatusInfo;
         int _status = 0;
 
@@ -65,6 +72,44 @@ namespace AvrTerminal
                         _currentState = RxState.WaitForTraceMsgLen;
                         ret = true;
                     }
+                    else if( b == (byte)AvrPacketType.ReadRegister)
+                    {
+                        _currentState = RxState.WaitRxReadRegLen;
+                    }
+                    else if( b == (byte)AvrPacketType.WriteRegister)
+                    {
+                        _currentState = RxState.WaitRxWriteRegStatus;
+                    }
+                    break;
+                case RxState.WaitRxReadRegLen:
+                    _expectedRegisterBytes = b;
+                    _regData.Clear();
+                    if (_expectedRegisterBytes == 0) // there was a problem
+                    {
+                        NotifyRegisterDataReceived();
+                        _currentState = RxState.WaitForStatusInfo;
+                    }
+                    else
+                    {
+                        _receivedRegisterBytes = 0;
+                        _currentState = RxState.WaitRxReadRegData;
+
+                    }
+                    break;
+                case RxState.WaitRxReadRegData:
+                    _regData.Add(b);
+                    _receivedRegisterBytes++;
+                    if( _receivedRegisterBytes == _expectedRegisterBytes)
+                    {
+                        _currentState = RxState.WaitForStatusInfo;
+                        NotifyRegisterDataReceived();
+                    }
+
+                    break;
+                case RxState.WaitRxWriteRegStatus:
+                    bool status = b == 1;
+                    _currentState = RxState.WaitForStatusInfo;
+                    NotifyWriteRegStatus(status);
                     break;
                 case RxState.WaitForLen:
                     _currentState = RxState.WaitForStatusInfo;
@@ -140,6 +185,8 @@ namespace AvrTerminal
 
         public event EventHandler<int> StatusReceived;
         public event EventHandler<byte[]> TraceMessageReceived;
+        public event EventHandler<byte[]> RegisterDataReceived;
+        public event EventHandler<bool> RegWriteStatusReceived;
 
         public List<byte> Consumed
         {
@@ -151,6 +198,22 @@ namespace AvrTerminal
             if( StatusReceived != null)
             {
                 StatusReceived(this, _status);
+            }
+        }
+
+        private void NotifyRegisterDataReceived()
+        {
+            if( RegisterDataReceived != null)
+            {
+                RegisterDataReceived(this, _regData.ToArray());
+            }
+        }
+
+        private void NotifyWriteRegStatus(bool status)
+        {
+            if( RegWriteStatusReceived != null)
+            {
+                RegWriteStatusReceived(this, status);
             }
         }
 

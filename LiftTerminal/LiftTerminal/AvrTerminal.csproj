@@ -110,11 +110,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AvrPacketType.cs" />
+    <Compile Include="AvrRegAccess.cs" />
     <Compile Include="ButtonType.cs" />
     <Compile Include="AvrStatusReceiver.cs" />
     <Compile Include="MacroExpansionHandler.cs" />
+    <Compile Include="RegisterViewModel.cs" />
     <Compile Include="SerialPortHandler.cs" />
     <Compile Include="TerminalViewModel.cs" />
+    <Compile Include="TraceInfoType.cs" />
     <Compile Include="TraceMessageHandler.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -158,6 +161,14 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Builder\Builder\Builder.csproj">
+      <Project>{b0fa8aa2-96a4-4dba-a14f-d5af70a135d5}</Project>
+      <Name>Builder</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plots\PlotLib\PlotLib.csproj">
+      <Project>{d6796f94-dc06-4c73-8ec6-4ce5747e8753}</Project>
+      <Name>PlotLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\RuntimeCheck\RuntimeCheck\RuntimeCheck\RuntimeCheck.csproj">
       <Project>{98370414-7515-4dc2-9be8-d145be42d50b}</Project>
       <Name>RuntimeCheck</Name>

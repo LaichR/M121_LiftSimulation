@@ -115,11 +115,11 @@ ButtonType;
 */
 typedef enum 
 {
-  Door100 = 0xF0,	//< 100% geschlossen
-  Door75 = 0x70,	//< 75% geschlossen
-  Door50 = 0x30,	//< 50% geschlossen
-  Door25 = 0x10,	//< 25% geschlossen
-  Door00 = 0x00		//< offen
+  Door100 = 0xF0,	///< 100% geschlossen
+  Door75 = 0x70,	///< 75% geschlossen
+  Door50 = 0x30,	///< 50% geschlossen
+  Door25 = 0x10,	///< 25% geschlossen
+  Door00 = 0x00		///< offen
 }
 DoorPosType;
 
@@ -387,14 +387,15 @@ void InitializeStart(void);
 * @brief Initialisierung der UART Schnittstelle
 *
 * Die Serielle Schnittstelle wird verwendet um mit dem PC zu kommunizieren.
-* Die Schnittstelle wird auf 38400 bauds initialisiert mit 8 Daten-Bits, einem Stop-Bit, ohne Parity-Bit
+* Die Schnittstelle wird auf 38400 bauds initialisiert mit 8 Daten-Bits, 
+* einem Stop-Bit, ohne Parity-Bit
 * RX ist auf Port D0 gemapped, TX auf Port D1
 * Das entspricht den Pins 1 und 2 auf dem Simulationsboard     
 */
 void Usart_Init(void);
 
 /** 
-* @brief Schreibens eines Zeichens auf die serielle Schnittstelle.
+* @brief Schreibens eines einzelnen Zeichens auf die serielle Schnittstelle.
 * @param ch Zeichen, welches ausgegeben werden soll.
 */
 void Usart_PutChar(char ch);
@@ -425,7 +426,7 @@ void SetElevatorSpeed(SpeedType speed);
 * @brief Startet die Fahrt der Fahrgastzelle
 *
 * @param targetPos Zielposition der Fahrgastzelle
-* @param signal Callback über welchen die aktuelle Position mitgegeben wird 
+* @param Callback über welchen die aktuelle Position mitgegeben wird 
 */
 void MoveElevator(uint8_t targetPos, PositionChangeSignal signal);
 
@@ -479,7 +480,8 @@ void ClrIndicatorElevatorState (FloorType floor);
 * @param ms nrOfMilliseconds bis der Timer ausgelöst wird.
 * @return die Id des Timer 0xFF wenn der Timer nicht aktiviert werden konnte;
 *
-* Das Framework erlaubt es bis zu acht timer gleichzeitig aktiviert zu haben. Ein Timer ist wird immer nur einmal aufgerufen. Periodische Timer müssen vom 
+* Das Framework erlaubt es bis zu acht Timer gleichzeitig aktiviert zu haben. 
+* Ein Timer wird immer nur einmal aufgerufen. Periodische Timer müssen vom 
 * Klienten wieder gestartet werden.
 *
 */

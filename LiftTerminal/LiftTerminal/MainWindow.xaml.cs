@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace AvrTerminal
 {
@@ -30,6 +31,7 @@ namespace AvrTerminal
 
         public MainWindow()
         {
+
             InitializeComponent();
             _terminalViewModel = new TerminalViewModel();
             this.DataContext = _terminalViewModel;
@@ -38,6 +40,13 @@ namespace AvrTerminal
             AddHandler(FrameworkElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Button_MouseLeftUp), true);
             Dispatcher.UnhandledException += Dispatcher_UnhandledException;
             _terminalViewModel.TraceMessageInserted += _terminalViewModel_TraceMessageInserted;
+        }
+
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            _terminalViewModel.Shutdown();
         }
 
         private void _terminalViewModel_TraceMessageInserted(object sender, string message)
@@ -183,6 +192,16 @@ namespace AvrTerminal
         private void BtnC4_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             _terminalViewModel.SendButtonUp(ButtonType.Cabine, 4);
+        }
+
+        private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            _terminalViewModel.HwSymbols.HandleValueChanged(e.OldValue, e.NewValue);
+        }
+
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+
         }
     }
 }

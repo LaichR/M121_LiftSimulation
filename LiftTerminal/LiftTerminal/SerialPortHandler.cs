@@ -18,9 +18,10 @@ namespace AvrTerminal
         AutoResetEvent _awaitDataAvailable = new AutoResetEvent(false);
         SerialPort _com;
         bool _running = false;
-        static int[] _availableBaudRates = new[] { 250000, 38400  };
+        static int[] _availableBaudRates = new[] { 250000, 500000, 1000000, 38400  };
         ConcurrentQueue<byte> _rxBuffer;
         object _synchRoot = new object();
+        List<byte> _debugBuffer = new List<byte>();
 
         public SerialPortHandler(ConcurrentQueue<byte> buffer)
         {
@@ -28,7 +29,10 @@ namespace AvrTerminal
             
         }
 
-
+        public void Reset()
+        {
+            _debugBuffer.Clear();
+        }
 
         public bool PortIsOpen
         {
@@ -49,6 +53,8 @@ namespace AvrTerminal
         }
 
         public event EventHandler<int> DataReceived;
+        public event EventHandler<bool> PortStatusChanged;
+
         public void StartCom(string comPort, int baudRate)
         {
             _runner = new Thread(() =>
@@ -63,6 +69,7 @@ namespace AvrTerminal
                         _com.Open();
                         _com.DataReceived += _com_DataReceived;
                         _running = true;
+                        NotifyPortStatusChanged();
 
                     }
                     catch { }
@@ -73,11 +80,14 @@ namespace AvrTerminal
                     {
                         while (_running)
                         {
-                            _awaitDataAvailable.WaitOne(5000);
+                            _awaitDataAvailable.WaitOne(100);
                             int nrOfReceivedData = 0;
                             while (_com.BytesToRead > 0 && nrOfReceivedData < 1024)
                             {
-                                _rxBuffer.Enqueue((byte)_com.ReadByte());
+                                byte data = (byte)_com.ReadByte();
+                                _debugBuffer.Add(data);
+                                _rxBuffer.Enqueue(data);
+                                
                                 nrOfReceivedData++;
                             }
                             NotifyDataReceived(nrOfReceivedData);
@@ -113,11 +123,10 @@ namespace AvrTerminal
                 _com = null;
                 _runner = null;
                 _running = false;
-                
-                
+                NotifyPortStatusChanged();
             })
             {
-                IsBackground = true
+                IsBackground = true, Priority = ThreadPriority.AboveNormal
             };
             _runner.Start();
             _awaitPortOpen.WaitOne(1000);
@@ -168,6 +177,12 @@ namespace AvrTerminal
             }
         }
 
-       
+        void NotifyPortStatusChanged()
+        {
+            if( PortStatusChanged != null)
+            {
+                PortStatusChanged(this, _running);
+            }
+        }
     }
 }
