@@ -53,8 +53,12 @@ namespace AvrTerminal
 
         private void DeviceConnection_PortStatusChanged(object sender, bool e)
         {
+            
             RaisePropertyChanged(nameof(CanRead));
             RaisePropertyChanged(nameof(CanWrite));
+            _cmdReadFromDevice.RaiseCanExecuteChanged();
+            _cmdWriteToDevice.RaiseCanExecuteChanged();
+
         }
 
         public bool CanRead
@@ -136,6 +140,8 @@ namespace AvrTerminal
                 {
                     CurrentRegister = skalar;
                 }
+                RaisePropertyChanged(nameof(CanRead));
+                RaisePropertyChanged(nameof(CanWrite));
             }
         }
 

@@ -1,0 +1,177 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="EntityDescription" 
+           targetNamespace="http://tempuri.org/EntityDescription.xsd" 
+           elementFormDefault="qualified" 
+           xmlns="http://tempuri.org/EntityDescription.xsd" 
+           xmlns:mstns="http://tempuri.org/EntityDescription.xsd" 
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:simpleType name="SupportedChipFamilies">
+    <xs:restriction>
+      <xs:simpleType>
+        <xs:list itemType="xs:NCName"/>
+      </xs:simpleType>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="HexInt">
+    <xs:restriction base="xs:token">
+      <xs:pattern value="(0x)?[0-9a-fA-F]+" />
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:complexType name="ProcessingUnitType">
+    <xs:sequence>
+      <xs:element name="Import" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="LibraryOrFile" type="xs:string" use="required"></xs:attribute>
+          <xs:attribute name="ByReference" type="xs:boolean" use="required"></xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:sequence minOccurs="0" maxOccurs="1">
+          <xs:element name="TypeDefinition" type="TypeDescriptionType" minOccurs="0" maxOccurs="unbounded"></xs:element>
+        </xs:sequence>
+        <xs:element name="MemorySection" type="MemorySectionT" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:attribute name="Namespace" type="xs:string" use="required" />
+  </xs:complexType>
+
+  <xs:simpleType name="StereotypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="HardwarePeripheral"/>
+      <xs:enumeration value="HardwareRegister"/>
+      <xs:enumeration value="IsrTable"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:complexType name="TypeDescriptionType">
+    <xs:sequence>
+      <xs:element name="Description" type="xs:string" minOccurs="0" />
+      <xs:element name="Stereotype" type ="StereotypeType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:ID" use="required" />
+  </xs:complexType>
+  
+  <xs:simpleType name="AccessType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ReadOnly" />
+      <xs:enumeration value="WriteOnly"  />
+      <xs:enumeration value="ReadWrite" />
+    </xs:restriction>
+  </xs:simpleType>
+  
+
+  
+  <xs:complexType name="FieldDescriptionType">
+    <xs:sequence>
+      <xs:element name="Description" type="xs:string" minOccurs="0" />
+      <xs:element name="Position" type="xs:integer" minOccurs="0" maxOccurs="1" />
+      <xs:element name="Access" type="AccessType" minOccurs="0" />
+      <xs:element name="Skip" type="xs:boolean" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            This field is used to mark fields as not accessible by debuggers; This is the case for any fifo register. 
+            Accessing this fields will interfere with the operaton of the application. Skip defaults to "false"
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:attribute name="FieldType" type="xs:string" use="required"/>
+    <xs:attribute name="Aligned" type="xs:int" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="StructType">
+    <xs:complexContent>
+      <xs:extension base="TypeDescriptionType">
+        <xs:sequence>
+          <xs:element name="TypeDefinition" type="TypeDescriptionType" minOccurs="0" maxOccurs="unbounded" />
+          <xs:element name="Field" type="FieldDescriptionType" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ArrayType">
+    <xs:complexContent>
+      <xs:extension base="TypeDescriptionType">
+        <xs:attribute name="ElementType" type="xs:NCName" use="required"/>
+        <xs:attribute name="Length" type="xs:integer" use ="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="IntegerType">
+    <xs:complexContent>
+      <xs:extension base="TypeDescriptionType">
+        <xs:sequence minOccurs="0" maxOccurs="1">
+          <xs:element name="Bitfield" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:all>
+                <xs:element name="Description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="Default" type="xs:integer" minOccurs="0" maxOccurs="1" />
+                <xs:element name="Access" type="AccessType" minOccurs="0" maxOccurs="1">
+                  <xs:annotation>
+                    <xs:documentation>
+                      Access defaults to ReadWrite
+                    </xs:documentation>
+                  </xs:annotation>
+                </xs:element>
+                <xs:element name="ValueSet" type="EnumType" minOccurs="0"/>
+              </xs:all>
+              <xs:attribute name="Name" type="xs:string" use="required" />
+              <xs:attribute name="Width" type="xs:int" use="required" />
+              <xs:attribute name="Position" type="xs:int" use="required"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="Size" type="xs:int" use="required">
+          <xs:annotation>
+            <xs:documentation>
+              Specifies the number of bytes of this integer type
+            </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="Signed" type="xs:boolean" use="required" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="EnumType">
+    <xs:complexContent>
+      <xs:extension base="TypeDescriptionType">
+        <xs:sequence>
+          <xs:element name="Enum" minOccurs="1" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:attribute name="Name" use="required"/>
+              <xs:attribute name="Value" type="HexInt" use ="optional"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="Size" type="xs:int" use="optional"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  <xs:complexType name="MemorySymbolT">
+    <xs:sequence>
+      <xs:element name="Description" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:NCName" use="required"/>
+    <xs:attribute name="Offset" type="HexInt" use ="required"/>
+    <xs:attribute name="Type" type="xs:NCName" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="MemorySectionT">
+    <xs:sequence>
+      <xs:element name="Description" type="xs:string" maxOccurs="1" minOccurs="0"/>
+      <xs:element name="Symbol" type="MemorySymbolT" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:NCName"></xs:attribute>
+    <xs:attribute name="Address" type="HexInt"/>
+    <xs:attribute name="ByteOrder" use="optional"/>
+    <xs:attribute name="Chip" type="SupportedChipFamilies" use ="required"/>
+  </xs:complexType>
+  <xs:element name="Unit" type="ProcessingUnitType" />
+</xs:schema>

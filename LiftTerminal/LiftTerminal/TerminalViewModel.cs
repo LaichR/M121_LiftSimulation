@@ -63,6 +63,8 @@ namespace AvrTerminal
         DelegateCommand _cmdOpenTrace;
         DelegateCommand _cmdSaveTrace;
         DelegateCommand _cmdSliderValueChanged;
+        DelegateCommand _cmdSendCloseDoor;
+        DelegateCommand _cmdSendOpenDoor;
        
         PlotLib.DataSources.DynamicDataSource _capturedData = new DynamicDataSource();
         double _dataOffset = 0;
@@ -104,6 +106,7 @@ namespace AvrTerminal
             _computeTraceLines = ComputeLineBrakesHexContent;
             _serialPortHandler = new SerialPortHandler(_rxBuffer);
             _serialPortHandler.DataReceived += RxDataReceived;
+            _serialPortHandler.PortStatusChanged += SerialPortHandler_PortStatusChanged;
             _rxAvrStatus.StatusReceived += AvrStatusReceived;
             _rxAvrStatus.TraceMessageReceived += AvrTraceMessageReceived;
             _registerAccess = new AvrRegAccess(_serialPortHandler, _rxAvrStatus);
@@ -179,6 +182,15 @@ namespace AvrTerminal
                 }
             }
             );
+
+            _cmdSendCloseDoor = new DelegateCommand(() => SendDoorClose(), () => _serialPortHandler.PortIsOpen);
+            _cmdSendOpenDoor = new DelegateCommand(() => SendOpenDoor(), () => _serialPortHandler.PortIsOpen);
+        }
+
+        private void SerialPortHandler_PortStatusChanged(object sender, bool e)
+        {
+            _cmdSendOpenDoor.RaiseCanExecuteChanged();
+            _cmdSendCloseDoor.RaiseCanExecuteChanged();
         }
 
         internal event EventHandler<string> TraceMessageInserted;
@@ -450,6 +462,22 @@ namespace AvrTerminal
             }
         }
 
+        public ICommand CmdSendOpenDoor
+        {
+            get
+            {
+                return _cmdSendOpenDoor;
+            }
+        }
+
+        public ICommand CmdSendCloseDoor
+        {
+            get
+            {
+                return _cmdSendCloseDoor;
+            }
+        }
+
         internal void Shutdown()
         {
 
@@ -536,12 +564,22 @@ namespace AvrTerminal
             return formattedTraceLines;
         }
 
+        internal void SendOpenDoor()
+        {
+            SendButtonUp(ButtonType.Open, 0xF);
+        }
+
+        internal void SendDoorClose()
+        {
+            SendButtonUp(ButtonType.Close, 0xF);
+        }
+
         internal void SendButtonDown(ButtonType buttonType, int floor)
         {
             int upperNibble = ((int)buttonType | 1) << 4;
             
             //TraceCharacters.Add(string.Format("Button down {0} {1}",buttonType, floor));
-            byte[] data = new byte[] { (byte)((upperNibble) |floor) };
+            byte[] data = new byte[] { (byte)((upperNibble) | floor) };
             var packet = PackAvrMessage(data, AvrPacketType.LiftSimulatorButton);
             _serialPortHandler.Write(packet, 0, packet.Length);
         }
@@ -633,7 +671,7 @@ namespace AvrTerminal
 
         private void UsbDisconnectEventArrived(object sender, EventArrivedEventArgs e)
         {
-            RaisePropertyChanged("AvailablePorts");
+            RaisePropertyChanged(nameof(AvailablePorts));
             if ( !SerialPortHandler.AvailablePorts.Contains(_selectedComPort)) // the selected port is not in the  list anymore
             {
                 _serialPortHandler.StopCom();

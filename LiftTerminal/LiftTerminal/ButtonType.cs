@@ -11,6 +11,9 @@ namespace AvrTerminal
     {
         Undefined,
         Floor = 2,
-        Cabine = 4
+        Cabine = 4,
+        Open = 12,
+        Close = 14,
+        
     }
 }

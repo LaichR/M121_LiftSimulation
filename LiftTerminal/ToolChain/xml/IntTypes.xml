@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Unit xmlns ="http://tempuri.org/EntityDescription.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="http://tempuri.org/EntityDescription.xsd ../Schema/EntityDescription.xsd"
+      Name="PredefinedTypes" Namespace="Types">
+  <TypeDefinition Name="uint8_t" xsi:type="IntegerType" Size="1" Signed="false"/>
+  <TypeDefinition Name="int8_t" xsi:type="IntegerType" Size="1" Signed="true"/>
+  <TypeDefinition Name="uint16_t" xsi:type="IntegerType" Size="2" Signed="false"/>
+  <TypeDefinition Name="int16_t" xsi:type="IntegerType" Size="2" Signed="true"/>
+  <TypeDefinition Name="uint32_t" xsi:type="IntegerType" Size="4" Signed="false"/>
+  <TypeDefinition Name="int32_t" xsi:type="IntegerType" Size="4" Signed="true"/>
+</Unit>

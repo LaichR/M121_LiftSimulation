@@ -44,7 +44,7 @@
                     <Image Source="Resources/save_trace.png" Width="16" Height="16" />
                 </Button>
             </ToolBar>
-            <ToolBar Name="LineBrakSettings"  HorizontalAlignment="Stretch">
+            <ToolBar Name="LineBrakeSettings"  HorizontalAlignment="Stretch">
                 <ComboBox ItemsSource="{Binding TraceOptions}" SelectedItem="{Binding TraceRepresentation}" MinWidth="75"/>
                 <TextBlock Text="Zeilentrennzeichen:"/>
                 <TextBox Text="{Binding LineBreaks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="150"/>
@@ -81,14 +81,14 @@
                                  LogicalWidth="{Binding Path=LogicalWdith}"
                                  DataSource="{Binding Path=CapturedData}"
                                  LogicalRange="{Binding Path=CapturedData}">
-                                 
+
                             <pl:Plot.PlotElements>
                                 <pl:PlotLine LineColor="Red" />
                                 <pl:PlotAxis Orientation="Horizontal" NrOfTicks="2" UpdateOnPositionChange="False"/>
                                 <pl:PlotAxis Orientation="Vertical"/>
                             </pl:Plot.PlotElements>
-                            
-                            
+
+
                         </pl:Plot>
                         <Label Content="Left" Grid.Row="0" Grid.Column="1" Margin="20,0,0,0"  VerticalAlignment="Center"/>
                         <TextBox Text="{Binding Path=LogicalX}" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" 
@@ -109,7 +109,7 @@
                     </Grid>
                 </TabItem>
                 <TabItem Header="Register View">
-                    <Grid Background="LightGray">
+                    <Grid Background="WhiteSmoke">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -123,7 +123,7 @@
                         <TreeView Grid.Row="0"  Grid.RowSpan="3" ItemsSource="{Binding Path=HwSymbols.RegisterTree}" 
                                   SelectedItemChanged="TreeView_SelectedItemChanged">
                             <TreeView.Resources>
-                                
+
                                 <HierarchicalDataTemplate DataType="{x:Type mdd:HardwareSymbolAccess}"
                                                           ItemsSource="{Binding Children}">
                                     <Grid>
@@ -145,7 +145,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="20,0,0,0"/>
                                     </Grid>
                                 </HierarchicalDataTemplate>
-                                
+
                                 <DataTemplate DataType="{x:Type mdd:SkalarField}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -168,7 +168,7 @@
                                     </Grid>
 
                                 </HierarchicalDataTemplate>
-                                
+
                             </TreeView.Resources>
                             <TreeView.ContextMenu>
                                 <ContextMenu>
@@ -347,7 +347,7 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
-                    </Grid> 
+                    </Grid>
                 </TabItem>
             </TabControl>
         </ContentControl>
@@ -358,11 +358,12 @@
         <ContentControl Grid.Column="1" Grid.Row="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <TabControl>
                 <TabItem Header="AVR-Input" HorizontalAlignment="Stretch">
-                    <Grid>
+                    <Grid Background="WhiteSmoke">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="5*"/>
-                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="147*"/>
+                            <ColumnDefinition Width="44*"/>
+                            <ColumnDefinition Width="479*"/>
+                            <ColumnDefinition Width="96*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition/>
@@ -370,32 +371,20 @@
                             <RowDefinition/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Label Grid.Row ="0" Grid.Column="0" Content="Input-Type:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                        <ComboBox Grid.Row ="0" Grid.Column="1" x:Name="InputType" ItemsSource="{Binding AvrAvailableInputTypes}" 
+                        <Label Grid.Row ="0" Grid.Column="0" Content="Input-Type:" VerticalAlignment="Center" HorizontalAlignment="Right" Grid.ColumnSpan="2" Margin="0,6"/>
+                        <ComboBox Grid.Row ="0" Grid.Column="2" x:Name="InputType" ItemsSource="{Binding AvrAvailableInputTypes}" 
                                   SelectedIndex="{Binding AvrSelectedInputType}"
-                                  Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
-                        <Label Grid.Row ="1" Grid.Column="0" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                        <TextBox Grid.Row ="1" Grid.Column="1" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
-                        <Button Grid.Row ="1" Grid.Column="2" Content="Write" Command="{Binding CmdWriteAvrInput}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,0,0,0"/>
-                        <Label Grid.Row="2" Grid.Column="0  " Content="PWM-Control:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <Slider Minimum="1" Maximum="255" Width="255" Margin="5,0,20,0" VerticalAlignment="Center"
-                                    TickFrequency="10" TickPlacement="Both" ValueChanged="Slider_ValueChanged"  Value="{Binding PwmDutyCycle}"/>
-                            
+                                  Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,8"/>
+                        <Label Grid.Row ="1" Grid.Column="1" Content="Input:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,6,0,5"/>
+                        <TextBox Grid.Row ="1" Grid.Column="2" x:Name="Input" Text="{Binding AvrInput}" Background="{Binding AvrInputBackground}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0,10,0,9"/>
+                        <Button Grid.Row ="1" Grid.Column="3" Content="Write" Command="{Binding CmdWriteAvrInput}" VerticalAlignment="Center" HorizontalAlignment="left" Margin="10,8,0,9"/>
 
-                            <RadioButton GroupName="Pwms" Name="Pwm1" IsChecked="{Binding UsePwm1}" VerticalAlignment="Center">
-                                <Label Content="Pwm1"/>
-                            </RadioButton>
-                            <RadioButton GroupName="Pwms" Name="Pwm2" IsChecked="{Binding UsePwm2}" VerticalAlignment="Center">
-                                <Label Content="Pwm2"/>
-                            </RadioButton>
-                        </StackPanel>
-                        <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
+                        <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" 
                                    Text="{Binding Status}"/>
                     </Grid>
                 </TabItem>
                 <TabItem Header="Macro-Expansion" HorizontalAlignment="Stretch">
-                    <Grid>
+                    <Grid Background="WhiteSmoke">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*"/>
                             <ColumnDefinition Width="10*"/>
@@ -435,6 +424,28 @@
                         <TextBox Text="{Binding MacroExpHandler.Expanded}" Grid.Row="3" Grid.Column="1" 
                                  TextWrapping="Wrap" VerticalScrollBarVisibility="Visible" />
                     </Grid>
+                </TabItem>
+                <TabItem Header="Open/Close Door" HorizontalAlignment="Stretch" >
+                    <Grid Background="WhiteSmoke">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="23*"/>
+                            <ColumnDefinition Width="340*"/>
+                            <ColumnDefinition Width="363*"/>
+                            <ColumnDefinition Width="20"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                            <RowDefinition Height="1*"/>
+                        </Grid.RowDefinitions>
+                        <Button x:Name="OpenDoorButton" Grid.Column="2" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Open Door"
+                                Command="{Binding CmdSendOpenDoor}" Margin="127.306,15,150,15"/>
+                        <Button x:Name="CloseDoorButton" Grid.Column="3" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close Door"
+                                Command="{Binding CmdSendCloseDoor}" Margin="150,15"/>
+                    </Grid>
+
+
                 </TabItem>
                 <!--<TabItem Header="TestLibrary">
                     <Grid>
